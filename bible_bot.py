@@ -25,7 +25,10 @@ bot = commands.Bot(command_prefix=commands.when_mentioned_or("$"), intents=inten
 
 # variables
 base_url = "https://dailyverses.net/"
-swear_words = ["ass", "bitch", "btch", "cock", "cunt", "damn", "dick", "fuck", "fuc", "fuk", "nigga", "shit", "turdface"]
+swear_words = [
+    "ass", "bitch", "btch", "cock", "cunt", "damn", "dick", "fuck",
+    "fuc", "fuk", "nigga", "niggar", "nigger", "shit", "turdface"
+]
 
 
 def get_votd_from_url() -> str:
