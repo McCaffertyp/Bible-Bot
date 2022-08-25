@@ -24,16 +24,13 @@ intents = discord.Intents().all()
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("$"), intents=intents)
 
 # variables
-base_url = "https://dailyverses.net/"
-swear_words = [
-    "anal", "ass", "bitch", "btch", "bullshit", "cock", "cum", "cunt", "damn", "dick", "dicks", "dumbass", "fuck",
-    "fucked", "fucking", "fuc", "fuk", "nigga", "nigar", "niggar", "nigger", "penis", "piss", "pissant",
-    "pissed", "pissing", "pussy", "shit", "shitting", "thot", "thots", "turdface", "vagina", "vaginal"
-]
+votd_base_url = "https://dailyverses.net/"
+verse_lookup_base_url = "https://www.openbible.info/labs/cross-references/search?q="
+swear_words = [line.split("\n")[0] for line in open("swear_words.txt", "r").readlines()]
 
 
 def get_votd_from_url() -> str:
-    lookup_url = "{0}{1}".format(base_url, "esv")
+    lookup_url = "{0}{1}".format(votd_base_url, "esv")
     webpage: http.client.HTTPResponse = urlopen(lookup_url)
     html_bytes: bytes = webpage.read()
     html: str = html_bytes.decode("utf-8")
@@ -52,21 +49,19 @@ def get_votd_from_url() -> str:
 
 
 def get_verse_from_lookup_url(book: str, chapter: str, verse: str) -> str:
-    lookup_url = "{0}{1}/{2}/{3}/esv".format(base_url, book, chapter, verse)
+    lookup_url = "{0}{1}+{2}%3A{3}".format(verse_lookup_base_url, book, chapter, verse)
     webpage: http.client.HTTPResponse = urlopen(lookup_url)
     html_bytes: bytes = webpage.read()
     html: str = html_bytes.decode("utf-8")
 
-    verse_text_start_search = "<span class=\"v2\">"
-    verse_text_start_index = html.find(verse_text_start_search) + len(verse_text_start_search)
-    verse_text_end_index = html.find("</span>", verse_text_start_index)
-
-    verse_ref_start_search = "class=\"vc\">"
-    verse_ref_start_index = html.find(verse_ref_start_search) + len(verse_ref_start_search)
-    verse_ref_end_index = html.find("</a>", verse_ref_start_index)
+    verse_text_start_search = "<div class=\"crossref-verse\">"
+    verse_text_sub_start_search = "<p>"
+    verse_text_search_start_index = html.find(verse_text_start_search)
+    verse_text_start_index = html.find(verse_text_sub_start_search, verse_text_search_start_index) + len(verse_text_sub_start_search)
+    verse_text_end_index = html.find("</p>", verse_text_start_index)
 
     verse_text = html[verse_text_start_index:verse_text_end_index]
-    reference = html[verse_ref_start_index:verse_ref_end_index]
+    reference = "{0} {1}:{2}".format(book.capitalize(), chapter, verse)
     return "\"{0}\" - {1} ESV".format(verse_text, reference)
 
 
@@ -82,8 +77,7 @@ async def on_message(message):
 
     if message.guild.name == GUILD:
         await filter_message(message)
-
-    await bot.process_commands(message)
+        await bot.process_commands(message)
 
 
 @bot.command(
