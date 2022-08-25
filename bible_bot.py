@@ -26,9 +26,9 @@ bot = commands.Bot(command_prefix=commands.when_mentioned_or("$"), intents=inten
 # variables
 base_url = "https://dailyverses.net/"
 swear_words = [
-    "ass", "bitch", "btch", "bullshit", "cock", "cum", "cunt", "damn", "dick", "fuck", "fucked", "fucking",
-    "fuc", "fuk", "nigga", "niggar", "nigger", "penis", "piss", "pissed", "pissing", "pussy", "shit",
-    "shitting", "turdface", "vagina"
+    "ass", "bitch", "btch", "bullshit", "cock", "cum", "cunt", "damn", "dick", "dumbass", "fuck", "fucked", "fucking",
+    "fuc", "fuk", "nigga", "nigar", "niggar", "nigger", "penis", "piss", "pissant", "pissed", "pissing",
+    "pussy", "shit", "shitting", "turdface", "vagina", "vaginal"
 ]
 
 
