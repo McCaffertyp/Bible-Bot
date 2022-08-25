@@ -24,8 +24,6 @@ intents = discord.Intents().all()
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("$"), intents=intents)
 
 # variables
-# daily_verse_url = "https://dailyverses.net/esv"
-# verse_lookup_base_url = "https://www.christianity.com/bible/esv/"
 base_url = "https://dailyverses.net/"
 swear_words = ["ass", "bitch", "btch", "cock", "cunt", "damn", "dick", "fuck", "fuc", "fuk", "shit", "turdface"]
 
@@ -55,13 +53,17 @@ def get_verse_from_lookup_url(book: str, chapter: str, verse: str) -> str:
     html_bytes: bytes = webpage.read()
     html: str = html_bytes.decode("utf-8")
 
-    verse_start_search = "<span class=\"v2\">"
-    verse_start_index = html.find(verse_start_search) + len(verse_start_search)
-    verse_end_index = html.find("</span>", verse_start_index)
+    verse_text_start_search = "<span class=\"v2\">"
+    verse_text_start_index = html.find(verse_text_start_search) + len(verse_text_start_search)
+    verse_text_end_index = html.find("</span>", verse_text_start_index)
 
-    verse_text = html[verse_start_index:verse_end_index]
-    reference = "{0} {1}:{2}".format(book.capitalize(), chapter, verse)
-    return "{0} - {1} ESV".format(verse_text, reference)
+    verse_ref_start_search = "class=\"vc\">"
+    verse_ref_start_index = html.find(verse_ref_start_search) + len(verse_ref_start_search)
+    verse_ref_end_index = html.find("</a>", verse_ref_start_index)
+
+    verse_text = html[verse_text_start_index:verse_text_end_index]
+    reference = html[verse_ref_start_index:verse_ref_end_index]
+    return "\"{0}\" - {1} ESV".format(verse_text, reference)
 
 
 @bot.event
@@ -75,10 +77,7 @@ async def on_message(message):
         return
 
     if message.guild.name == GUILD:
-        for word in swear_words:
-            if word in message.content.lower():
-                await delete_message(message)
-                break
+        await filter_message(message)
 
     await bot.process_commands(message)
 
@@ -113,12 +112,39 @@ async def send_verse_of_the_day(ctx):
     help="Looks up and prints out the verse that was searched.",
     brief="Looks up verse and prints it."
 )
-async def lookup_verse(ctx, book: str = None, chapter: str = None, verse: str = None):
+async def verse_lookup(ctx, book: str = None, chapter: str = None, verse: str = None):
     if book is None or chapter is None or verse is None:
         await send_message(ctx, "Unfortunately I cannot look that up. Check all values were entered.")
     else:
         verse_text = get_verse_from_lookup_url(book.lower(), chapter, verse)
         await send_message(ctx, verse_text)
+
+
+async def filter_message(message):
+    for word in swear_words:
+        if word in message.content.lower():
+            if is_banned_word(word, message.content.lower()):
+                await delete_message(message)
+                break
+
+
+def is_banned_word(swear_word: str, sentence: str) -> bool:
+    start_index_of_swear_word = sentence.find(swear_word)
+    end_index_of_swear_word = start_index_of_swear_word + len(swear_word)
+    word = sentence[start_index_of_swear_word:end_index_of_swear_word]
+
+    left = start_index_of_swear_word - 1
+    right = end_index_of_swear_word
+
+    while left > -1 and sentence[left] != " ":
+        word = "{0}{1}".format(sentence[left], word)
+        left -= 1
+
+    while right < len(sentence) and sentence[right] != " ":
+        word = "{0}{1}".format(word, sentence[right])
+        right += 1
+
+    return word in swear_words
 
 
 async def delete_message(message):
