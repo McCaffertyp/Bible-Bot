@@ -27,7 +27,7 @@ bot = commands.Bot(command_prefix=commands.when_mentioned_or("$"), intents=inten
 # daily_verse_url = "https://dailyverses.net/esv"
 # verse_lookup_base_url = "https://www.christianity.com/bible/esv/"
 base_url = "https://dailyverses.net/"
-swear_words = ["fuck", "fuc", "fuk", "shit", "dick", "cock", "ass", "cunt", "bitch", "btch", "SillyWillyBilly"]
+swear_words = ["fuck", "fuc", "fuk", "shit", "dick", "cock", "ass", "cunt", "bitch", "btch", "sillywillybilly"]
 
 
 def get_votd_from_url() -> str:
