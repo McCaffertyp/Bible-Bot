@@ -5,9 +5,10 @@ Created on Wed Aug 24 04:35:00 2022
 @author: Paul McCafferty
 @version: 1.0
 """
-
+import csv
 # bot.py
 import os
+import random
 import discord
 import threading
 import http.client
@@ -16,6 +17,10 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from urllib.request import urlopen
 
+BIBLE_DICT_NAME = "Name"
+BIBLE_DICT_CHAPTERS = "Chapters"
+BIBLE_DICT_TOTAL_VERSES = "Total Verses"
+BIBLE_DICT_AVG_VERSES = "Average Verses"
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -28,7 +33,6 @@ bot = commands.Bot(command_prefix=commands.when_mentioned_or("$"), intents=inten
 votd_base_url = "https://dailyverses.net/"
 verse_lookup_base_url = "https://www.openbible.info/labs/cross-references/search?q="
 swear_words = [line.split("\n")[0] for line in open("swear_words.txt", "r").readlines()]
-book_names = [line.split("\n")[0] for line in open("books_of_the_bible.txt", "r").readlines()]
 
 
 def get_votd_from_url() -> str:
@@ -50,7 +54,7 @@ def get_votd_from_url() -> str:
     return "\"{0}\" - {1} ESV".format(verse_text, reference)
 
 
-def get_verse_from_lookup_url(book: str, chapter_verse: str, book_num: str) -> str:
+def get_verse_from_lookup_url(book: str, chapter_verse: str, book_num: str = None) -> str:
     book = book.capitalize()
     chapter_verse_split = chapter_verse.split(":")
     chapter = chapter_verse_split[0]
@@ -105,7 +109,8 @@ async def print_help(ctx):
     dailyvotd_help_text = "$dailyvotd [time]\nPrints the Verse of the Day every day at a consistent time. Using again while active turns it off."
     votd_help_text = "$votd\nPrints the Verse of the Day that was fetched from online."
     lookup_help_text = "$lookup [book] [chapter:verse] [book_num|optional]\nLooks up and prints out the verse that was searched."
-    help_text = "```{0}\n\n{1}\n\n{2}\n\n{3}```".format(h_help_text, dailyvotd_help_text, votd_help_text, lookup_help_text)
+    rlookup_help_text = "$rlookup\nLooks up and prints out a random verse."
+    help_text = "```{0}\n\n{1}\n\n{2}\n\n{3}\n\n{4}```".format(h_help_text, dailyvotd_help_text, votd_help_text, lookup_help_text, rlookup_help_text)
     await send_message(ctx, help_text)
 
 
@@ -152,6 +157,44 @@ async def verse_lookup(ctx, book: str = None, chapter_verse: str = None, book_nu
                 await send_message(ctx, "Unfortunately I cannot look that up. The entered Book Number does not exist.")
         verse_text = get_verse_from_lookup_url(book.lower(), chapter_verse, book_num)
         await send_message(ctx, remove_html_tags(verse_text))
+
+
+@bot.command(
+    name="rlookup",
+    help="Looks up and prints out a random verse.",
+    brief="Prints random verse."
+)
+async def verse_lookup_random(ctx):
+    with open("books_of_the_bible.csv") as csv_file:
+        csv_reader = csv.DictReader(csv_file)
+        bible_dict = {}
+        book_names = []
+        skip_first_row = True
+        for row in csv_reader:
+            if not skip_first_row:
+                skip_first_row = True
+            else:
+                book_name = row[BIBLE_DICT_NAME]
+                bible_dict[book_name] = row
+                book_names.append(book_name)
+
+        random_book: str = book_names[random.randint(0, (len(book_names) - 1))]
+        random_book_stats = bible_dict.get(random_book)
+        random_book_chapters = int(random_book_stats[BIBLE_DICT_CHAPTERS])
+        random_book_chapter = random.randint(1, random_book_chapters)
+        random_book_verses = int(random_book_stats[str(random_book_chapter)])
+        random_book_verse = random.randint(1, random_book_verses)
+        random_chapter_verse = "{0}:{1}".format(random_book_chapter, random_book_verse)
+
+        if " " in random_book:
+            random_book_split = random_book.split(" ")
+            bna = random_book_split[1]
+            bnu = random_book_split[0]
+            verse_text = get_verse_from_lookup_url(bna, random_chapter_verse, bnu)
+        else:
+            verse_text = get_verse_from_lookup_url(random_book, random_chapter_verse, None)
+
+        await send_message(ctx, verse_text)
 
 
 async def filter_message(message):
