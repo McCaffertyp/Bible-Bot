@@ -6,6 +6,7 @@ Created on Wed Aug 24 04:35:00 2022
 @version: 1.0
 """
 import csv
+import operator
 # bot.py
 import os
 import random
@@ -42,6 +43,7 @@ votd_base_url = "https://dailyverses.net/"
 verse_lookup_base_url = "https://www.openbible.info/labs/cross-references/search?q="
 keyword_search_base_url = "https://www.biblegateway.com/quicksearch/?quicksearch="
 swear_words = [line.split("\n")[0] for line in open("swear_words.txt", "r").readlines()]
+operators = { "+": operator.add, "-": operator.sub, "*": operator.mul, "/": operator.truediv }
 
 
 def get_votd_from_url() -> str:
@@ -156,7 +158,11 @@ async def print_help(ctx):
     lookup_help_text = "$lookup [book] [chapter:verse] [book_num|optional]\nLooks up and prints out the verse that was searched."
     rlookup_help_text = "$rlookup\nLooks up and prints out a random verse."
     keyword_help_text = "$keyword [word]\nTakes in a singular keyword and searches online for the top related verse to print out as a response."
-    help_text = "```{0}\n\n{1}\n\n{2}\n\n{3}\n\n{4}\n\n{5}```".format(h_help_text, dailyvotd_help_text, votd_help_text, lookup_help_text, rlookup_help_text, keyword_help_text)
+    math_help_text = "$math [number_a] [operator] [number_b]\nProvided two numbers and a method of operation, the bot will produce the result. Supports the following: +, -, *, /"
+    help_text = "```{0}\n\n{1}\n\n{2}\n\n{3}\n\n{4}\n\n{5}\n\n{6}```".format(
+        h_help_text, dailyvotd_help_text, votd_help_text, lookup_help_text,
+        rlookup_help_text, keyword_help_text, math_help_text
+    )
     await send_message(ctx, help_text)
 
 
@@ -262,6 +268,19 @@ async def search_keyword(ctx, keyword: str = None):
             await send_message(ctx, "Keyword \"{0}\" has 0 good matches.".format(keyword))
         else:
             await send_message(ctx, remove_html_tags(verse_text))
+
+
+@bot.command(
+    name="math",
+    help="Provided two numbers and a method of operation, the bot will produce the result.",
+    brief="Give two number and an operator, get result."
+)
+async def do_math(ctx, num_one: int = None, op: str = None, num_two: int = None):
+    if num_one is None or op is None or num_two is None:
+        await send_message(ctx, "Cannot perform math operations without all the necessary parts.")
+    else:
+        answer = operators[op](num_one, num_two)
+        await send_message(ctx, "Answer: {0}".format(answer))
 
 
 async def filter_message(message):
