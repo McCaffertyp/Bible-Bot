@@ -301,11 +301,13 @@ def get_verse_from_lookup_url(book: str, chapter_verse: str, book_num: str = Non
     chapter_verse_split = chapter_verse.split(":")
     chapter = chapter_verse_split[0]
     verse = chapter_verse_split[1]
+    logger.d("Looking up: book_num={0}, book={1}, chapter={2}, verse={3}".format(book_num, book, chapter, verse))
     if book_num is None:
-        lookup_url = "{0}+{1}+{2}%3A{3}".format(verse_lookup_base_url, book, chapter, verse)
+        lookup_url = "{0}{1}+{2}%3A{3}".format(verse_lookup_base_url, book.replace(" ", "+"), chapter, verse)
     else:
-        lookup_url = "{0}{1}+{2}+{3}%3A{4}".format(verse_lookup_base_url, book_num, book, chapter, verse)
+        lookup_url = "{0}{1}+{2}+{3}%3A{4}".format(verse_lookup_base_url, book_num, book.replace(" ", "+"), chapter, verse)
 
+    logger.d("Using url={0}".format(lookup_url))
     webpage: http.client.HTTPResponse = urlopen(lookup_url)
     html_bytes: bytes = webpage.read()
     html: str = html_helper.unescape(html_bytes.decode("utf-8"))
@@ -363,7 +365,7 @@ def get_verse_from_keyword_url(word) -> str:
 
 
 def get_random_verse() -> str:
-    with open("books_of_the_bible.csv") as csv_file:
+    with open("books_of_the_bible_test.csv") as csv_file:
         csv_reader = csv.DictReader(csv_file)
         bible_dict = {}
         book_names = []
@@ -390,10 +392,13 @@ def get_random_verse() -> str:
         random_chapter_verse = "{0}:{1}".format(random_book_chapter, random_book_verse)
 
         if " " in random_book:
-            random_book_split = random_book.split(" ")
-            bna = random_book_split[1]
-            bnu = random_book_split[0]
-            verse_text = get_verse_from_lookup_url(bna, random_chapter_verse, bnu)
+            if "Song" in random_book:
+                verse_text = get_verse_from_lookup_url(random_book, random_chapter_verse, None)
+            else:
+                random_book_split = random_book.split(" ")
+                bna = random_book_split[1]
+                bnu = random_book_split[0]
+                verse_text = get_verse_from_lookup_url(bna, random_chapter_verse, bnu)
         else:
             verse_text = get_verse_from_lookup_url(random_book, random_chapter_verse, None)
 
