@@ -145,7 +145,8 @@ async def print_help(ctx):
     votd_help_text = "$votd\nPrints the Verse of the Day that was fetched from online."
     lookup_help_text = "$lookup [book] [chapter:verse] [book_num|optional]\nLooks up and prints out the verse that was searched."
     rlookup_help_text = "$rlookup\nLooks up and prints out a random verse."
-    help_text = "```{0}\n\n{1}\n\n{2}\n\n{3}\n\n{4}```".format(h_help_text, dailyvotd_help_text, votd_help_text, lookup_help_text, rlookup_help_text)
+    keyword_help_text = "$keyword [word]\nTakes in a singular keyword and searches online for the top related verse to print out as a response."
+    help_text = "```{0}\n\n{1}\n\n{2}\n\n{3}\n\n{4}\n\n{5}```".format(h_help_text, dailyvotd_help_text, votd_help_text, lookup_help_text, rlookup_help_text, keyword_help_text)
     await send_message(ctx, help_text)
 
 
