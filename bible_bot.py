@@ -98,7 +98,12 @@ def get_verse_from_keyword_url(word) -> str:
     html: str = html_helper.unescape(html_bytes.decode("utf-8"))
 
     verse_text_start_search = "<div class=\"bible-item-text\">"
-    verse_text_start_index = html.find(verse_text_start_search) + len(verse_text_start_search)
+    verse_text_start_index = html.find(verse_text_start_search)
+    if verse_text_start_index == -1:
+        verse_text_start_search = "div class=\"bible-item-text col-sm-9\">"
+        verse_text_start_index = html.find(verse_text_start_search)
+        if verse_text_start_index == -1:
+            return "error"
     verse_text_end_index = html.find("<div class=\"bible-item-extras\">", verse_text_start_index)
 
     verse_ref_start_search = "<a class=\"bible-item-title\""
@@ -107,13 +112,18 @@ def get_verse_from_keyword_url(word) -> str:
     verse_ref_start_index = html.find(verse_ref_sub_start_search, verse_ref_search_start_index) + len(verse_ref_sub_start_search)
     verse_ref_end_index = html.find("</a>", verse_ref_start_index)
 
-    verse_text = html[verse_text_start_index:verse_text_end_index]
+    verse_text_adjusted_start_index = verse_text_start_index + len(verse_text_start_search)
+    verse_text = html[verse_text_adjusted_start_index:verse_text_end_index]
     if "<h3>" in verse_text:
         verse_text_start_search = "</h3>"
         verse_text_start_index = verse_text.find(verse_text_start_search) + len(verse_text_start_search)
         verse_text_end_index = verse_text.find("<div class=\"bible-item-extras\">", verse_text_start_index)
         verse_text = verse_text[verse_text_start_index:verse_text_end_index]
     reference = html[verse_ref_start_index:verse_ref_end_index]
+
+    while verse_text[0] == "\n":
+        verse_text = verse_text[1:]
+
     return "\"{0}\" - {1} ESV".format(verse_text, reference)
 
 
@@ -248,7 +258,10 @@ async def search_keyword(ctx, keyword: str = None):
         await send_message(ctx, "Unfortunately nothing popped up for that keyword, since no keyword was entered.")
     else:
         verse_text = get_verse_from_keyword_url(keyword)
-        await send_message(ctx, remove_html_tags(verse_text))
+        if verse_text == "error":
+            await send_message(ctx, "Keyword \"{0}\" has 0 good matches.".format(keyword))
+        else:
+            await send_message(ctx, remove_html_tags(verse_text))
 
 
 async def filter_message(message):
