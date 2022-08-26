@@ -40,6 +40,7 @@ bot = commands.Bot(command_prefix=commands.when_mentioned_or("$"), intents=inten
 # variables
 votd_base_url = "https://dailyverses.net/"
 verse_lookup_base_url = "https://www.openbible.info/labs/cross-references/search?q="
+keyword_search_base_url = "https://www.biblegateway.com/quicksearch/?quicksearch="
 swear_words = [line.split("\n")[0] for line in open("swear_words.txt", "r").readlines()]
 
 
@@ -87,6 +88,32 @@ def get_verse_from_lookup_url(book: str, chapter_verse: str, book_num: str = Non
         reference = "{0} {1}".format(book, chapter_verse)
     else:
         reference = "{0} {1} {2}".format(book_num, book, chapter_verse)
+    return "\"{0}\" - {1} ESV".format(verse_text, reference)
+
+
+def get_verse_from_keyword_url(word) -> str:
+    lookup_url = "{0}{1}&version=ESV".format(keyword_search_base_url, word)
+    webpage: http.client.HTTPResponse = urlopen(lookup_url)
+    html_bytes: bytes = webpage.read()
+    html: str = html_helper.unescape(html_bytes.decode("utf-8"))
+
+    verse_text_start_search = "<div class=\"bible-item-text\">"
+    verse_text_start_index = html.find(verse_text_start_search) + len(verse_text_start_search)
+    verse_text_end_index = html.find("<div class=\"bible-item-extras\">", verse_text_start_index)
+
+    verse_ref_start_search = "<a class=\"bible-item-title\""
+    verse_ref_sub_start_search = ">"
+    verse_ref_search_start_index = html.find(verse_ref_start_search)
+    verse_ref_start_index = html.find(verse_ref_sub_start_search, verse_ref_search_start_index) + len(verse_ref_sub_start_search)
+    verse_ref_end_index = html.find("</a>", verse_ref_start_index)
+
+    verse_text = html[verse_text_start_index:verse_text_end_index]
+    if "<h3>" in verse_text:
+        verse_text_start_search = "</h3>"
+        verse_text_start_index = verse_text.find(verse_text_start_search) + len(verse_text_start_search)
+        verse_text_end_index = verse_text.find("<div class=\"bible-item-extras\">", verse_text_start_index)
+        verse_text = verse_text[verse_text_start_index:verse_text_end_index]
+    reference = html[verse_ref_start_index:verse_ref_end_index]
     return "\"{0}\" - {1} ESV".format(verse_text, reference)
 
 
@@ -207,6 +234,19 @@ async def verse_lookup_random(ctx):
         else:
             verse_text = get_verse_from_lookup_url(random_book, random_chapter_verse, None)
 
+        await send_message(ctx, remove_html_tags(verse_text))
+
+
+@bot.command(
+    name="keyword",
+    help="Takes in a singular keyword and searches online for the top related verse to print out as a response.",
+    brief="Single keyword option to search online."
+)
+async def search_keyword(ctx, keyword: str = None):
+    if keyword is None:
+        await send_message(ctx, "Unfortunately nothing popped up for that keyword, since no keyword was entered.")
+    else:
+        verse_text = get_verse_from_keyword_url(keyword)
         await send_message(ctx, remove_html_tags(verse_text))
 
 
