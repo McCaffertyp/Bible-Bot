@@ -176,7 +176,6 @@ async def bible_quizzing(ctx, option: str = None):
         await send_message(ctx, "{0} your quizzing option is on: {1}".format(username, option))
 
     random_verse = get_random_verse()
-    print(random_verse)
     verse_text_start = random_verse.find("\"") + 1
     verse_text_end = random_verse.find("\"", verse_text_start)
     verse_text = random_verse[verse_text_start:verse_text_end]
@@ -256,10 +255,10 @@ async def check_answer(message, answer: str):
     username = quizzer.split("#")[0]
     correct_answer: str = in_quiz[quizzer]
     if answer.lower() != correct_answer.lower():
-        await send_message(message,
-                           "Sorry, {0}, that is incorrect. Was looking for:\n{1}".format(username, correct_answer))
+        await send_message(message, "Sorry, {0}, that is incorrect. Was looking for:\n{1}".format(username, correct_answer))
     else:
         await send_message(message, "Congratulations, {0}, that is correct!".format(username))
+    in_quiz.__delitem__(quizzer)
 
 
 def convert_twenty_four_to_twelve(time: str) -> str:
