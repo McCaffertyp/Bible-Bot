@@ -199,7 +199,7 @@ async def bible_quizzing(ctx, option: str = None):
         quizzing[quizzer] = verse_reference
     elif option == "word":
         verse_words = verse_text.split(" ")
-        remove_word = verse_words[random.randint(0, (len(verse_words) - 1))].replace(",", "")
+        remove_word = replace_any(verse_words[random.randint(0, (len(verse_words) - 1))], [",", ";", ".", ":"], "")
         quiz_verse = replace_characters(random_verse, remove_word, "_")
         quizzing[quizzer] = remove_word
     else:
@@ -316,6 +316,7 @@ async def submit_hangman_guess(ctx, guess: str = None):
             if updated_mistakes_remaining == 0:
                 status_update = "Unfortunate, {0}. You ran out of mistakes. Here's the verse:\n{1}".format(player_mention, puzzle_solution)
                 await send_message(ctx, handle_discord_formatting(status_update))
+                playing_hangman.__delitem__(player)
                 return
             playing_hangman[player][HANGMAN_DICT_MISTAKES_LEFT] = updated_mistakes_remaining
 
@@ -323,6 +324,7 @@ async def submit_hangman_guess(ctx, guess: str = None):
         current_progress = playing_hangman[player][HANGMAN_DICT_PROGRESS]
         if puzzle_solution == current_progress:
             status_update = "Congrats, {0}! You finished the verse!\n{1}".format(player_mention, puzzle_solution)
+            playing_hangman.__delitem__(player)
             await send_message(ctx, handle_discord_formatting(status_update))
         else:
             attempts_left = playing_hangman[player][HANGMAN_DICT_MISTAKES_LEFT]
@@ -570,6 +572,12 @@ def remove_html_tags(text: str) -> str:
         text = text.replace(text[open_tag_index:end_tag_index], "")
         has_tag = "<" in text
     return text
+
+
+def replace_any(s: str, c_list: list, r: str) -> str:
+    for c in c_list:
+        s.replace(c, r)
+    return s
 
 
 def replace_characters(s: str, c: str, r: str) -> str:
