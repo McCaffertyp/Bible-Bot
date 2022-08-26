@@ -365,7 +365,7 @@ def get_verse_from_keyword_url(word) -> str:
 
 
 def get_random_verse() -> str:
-    with open("books_of_the_bible_test.csv") as csv_file:
+    with open("books_of_the_bible.csv") as csv_file:
         csv_reader = csv.DictReader(csv_file)
         bible_dict = {}
         book_names = []
