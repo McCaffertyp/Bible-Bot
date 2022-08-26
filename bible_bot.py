@@ -377,8 +377,6 @@ def get_random_verse() -> str:
                 book_names.append(book_name)
 
         random_book: str = book_names[random.randint(0, (len(book_names) - 1))]
-        while random_book == "Song of Solomon":
-            random_book: str = book_names[random.randint(0, (len(book_names) - 1))]
         logger.d("Random book fetched = {0}".format(random_book))
         random_book_stats = bible_dict.get(random_book)
         random_book_chapters = int(random_book_stats[BIBLE_DICT_CHAPTERS])
