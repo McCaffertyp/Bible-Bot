@@ -210,7 +210,7 @@ async def bible_quizzing(ctx, option: str = None):
         #     all_words = "{0},{1}".format(all_words, remove_word)
         # in_quiz[quizzer] = all_words[1:(len(all_words) - 1)]
 
-    await send_message(ctx, quiz_verse)
+    await send_message(ctx, "{0}, your quiz is:\n{1}".format(ctx.author.mention, quiz_verse))
 
 
 @bot.command(
