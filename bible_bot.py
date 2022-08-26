@@ -27,7 +27,7 @@ load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD_EBC = os.getenv("DISCORD_EBC_GUILD")
 GUILD_SQUEEZE = os.getenv("DISCORD_SQUEEZE_GUILD")
-use_ebc = True
+use_ebc = False
 
 if use_ebc:
     GUILD = GUILD_EBC
@@ -214,12 +214,13 @@ async def filter_message(message):
     for word in swear_words:
         if word in message.content.lower():
             if is_banned_word(word, message.content.lower()):
-                await delete_message(message)
+                await delete_message(message, word)
                 break
 
 
-async def delete_message(message):
+async def delete_message(message, word):
     await message.delete()
+    logger.i("User {0} tried to use the banned word \"{1}\"".format(str(message.author).split("#")[0], word))
     response = "{0} no swearing while I'm around.".format(message.author.mention)
     await send_message(message, response)
 
