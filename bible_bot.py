@@ -194,7 +194,7 @@ async def verse_lookup_random(ctx):
         else:
             verse_text = get_verse_from_lookup_url(random_book, random_chapter_verse, None)
 
-        await send_message(ctx, verse_text)
+        await send_message(ctx, remove_html_tags(verse_text))
 
 
 async def filter_message(message):
