@@ -307,7 +307,7 @@ async def submit_hangman_guess(ctx, guess: str = None):
             logger.w("Tried to access a non-existent key")
 
         puzzle_solution = playing_hangman[player][HANGMAN_DICT_SOLUTION]
-        if guess in puzzle_solution:
+        if guess in puzzle_solution.lower():
             puzzle_progress = playing_hangman[player][HANGMAN_DICT_PROGRESS]
             updated_progress = update_hangman_puzzle_progress(guess, puzzle_solution, puzzle_progress)
             playing_hangman[player][HANGMAN_DICT_PROGRESS] = updated_progress
@@ -317,9 +317,13 @@ async def submit_hangman_guess(ctx, guess: str = None):
 
         playing_hangman[player][HANGMAN_DICT_GUESSES] = "{0}{1}".format(previous_guesses, guess)
         current_progress = playing_hangman[player][HANGMAN_DICT_PROGRESS]
-        attempts_left = playing_hangman[player][HANGMAN_DICT_MISTAKES_LEFT]
-        status_update = "{0} - Progress:\n{1}\n\nRemaining Mistakes: {2}".format(player_mention, current_progress, attempts_left)
-        await send_message(ctx, handle_discord_formatting(status_update))
+        if puzzle_solution == current_progress:
+            status_update = "Congrats, {0}! You finished the verse!\n{1}".format(player_mention, puzzle_solution)
+            await send_message(ctx, handle_discord_formatting(status_update))
+        else:
+            attempts_left = playing_hangman[player][HANGMAN_DICT_MISTAKES_LEFT]
+            status_update = "{0} - Progress:\n{1}\n\nRemaining Mistakes: {2}".format(player_mention, current_progress, attempts_left)
+            await send_message(ctx, handle_discord_formatting(status_update))
 
 
 @bot.command(
@@ -578,8 +582,8 @@ def update_hangman_puzzle_progress(guess: str, solution: str, progress: str) -> 
     updated_puzzle = ""
 
     for i in range(0, len(solution_characters)):
-        if solution_characters[i] == guess:
-            updated_puzzle = "{0}{1}".format(updated_puzzle, guess)
+        if solution_characters[i].lower() == guess:
+            updated_puzzle = "{0}{1}".format(updated_puzzle, solution_characters[i])
         else:
             updated_puzzle = "{0}{1}".format(updated_puzzle, progress_characters[i])
 
