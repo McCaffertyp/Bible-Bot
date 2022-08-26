@@ -275,7 +275,7 @@ async def search_keyword(ctx, keyword: str = None):
     help="Provided two numbers and a method of operation, the bot will produce the result.",
     brief="Give two number and an operator, get result."
 )
-async def do_math(ctx, num_one: int = None, op: str = None, num_two: int = None):
+async def do_math(ctx, num_one: float = None, op: str = None, num_two: float = None):
     if num_one is None or op is None or num_two is None:
         await send_message(ctx, "Cannot perform math operations without all the necessary parts.")
     else:
