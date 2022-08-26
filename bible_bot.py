@@ -11,6 +11,7 @@ import os
 import discord
 import threading
 import http.client
+import html as html_helper
 from discord.ext import commands
 from dotenv import load_dotenv
 from urllib.request import urlopen
@@ -27,13 +28,14 @@ bot = commands.Bot(command_prefix=commands.when_mentioned_or("$"), intents=inten
 votd_base_url = "https://dailyverses.net/"
 verse_lookup_base_url = "https://www.openbible.info/labs/cross-references/search?q="
 swear_words = [line.split("\n")[0] for line in open("swear_words.txt", "r").readlines()]
+book_names = [line.split("\n")[0] for line in open("books_of_the_bible.txt", "r").readlines()]
 
 
 def get_votd_from_url() -> str:
     lookup_url = "{0}{1}".format(votd_base_url, "esv")
     webpage: http.client.HTTPResponse = urlopen(lookup_url)
     html_bytes: bytes = webpage.read()
-    html: str = html_bytes.decode("utf-8")
+    html: str = html_helper.unescape(html_bytes.decode("utf-8"))
 
     verse_text_start_search = "<span class=\"v1\">"
     verse_text_start_index = html.find(verse_text_start_search) + len(verse_text_start_search)
@@ -48,11 +50,19 @@ def get_votd_from_url() -> str:
     return "\"{0}\" - {1} ESV".format(verse_text, reference)
 
 
-def get_verse_from_lookup_url(book: str, chapter: str, verse: str) -> str:
-    lookup_url = "{0}{1}+{2}%3A{3}".format(verse_lookup_base_url, book, chapter, verse)
+def get_verse_from_lookup_url(book: str, chapter_verse: str, book_num: str) -> str:
+    book = book.capitalize()
+    chapter_verse_split = chapter_verse.split(":")
+    chapter = chapter_verse_split[0]
+    verse = chapter_verse_split[1]
+    if book_num is None:
+        lookup_url = "{0}+{1}+{2}%3A{3}".format(verse_lookup_base_url, book, chapter, verse)
+    else:
+        lookup_url = "{0}{1}+{2}+{3}%3A{4}".format(verse_lookup_base_url, book_num, book, chapter, verse)
+
     webpage: http.client.HTTPResponse = urlopen(lookup_url)
     html_bytes: bytes = webpage.read()
-    html: str = html_bytes.decode("utf-8")
+    html: str = html_helper.unescape(html_bytes.decode("utf-8"))
 
     verse_text_start_search = "<div class=\"crossref-verse\">"
     verse_text_sub_start_search = "<p>"
@@ -61,7 +71,10 @@ def get_verse_from_lookup_url(book: str, chapter: str, verse: str) -> str:
     verse_text_end_index = html.find("</p>", verse_text_start_index)
 
     verse_text = html[verse_text_start_index:verse_text_end_index]
-    reference = "{0} {1}:{2}".format(book.capitalize(), chapter, verse)
+    if book_num is None:
+        reference = "{0} {1}".format(book, chapter_verse)
+    else:
+        reference = "{0} {1} {2}".format(book_num, book, chapter_verse)
     return "\"{0}\" - {1} ESV".format(verse_text, reference)
 
 
@@ -78,6 +91,22 @@ async def on_message(message):
     if message.guild.name == GUILD:
         await filter_message(message)
         await bot.process_commands(message)
+        if "bro =" == message.content.lower():
+            await send_message(message, "Wassup homie")
+
+
+@bot.command(
+    name="h",
+    help="Provides help on all the commands available by printing out the descriptions for each.",
+    brief="Provides help on all the commands available."
+)
+async def print_help(ctx):
+    h_help_text = "$h\nProvides help on all the commands available by printing out the descriptions for each."
+    dailyvotd_help_text = "$dailyvotd [time]\nPrints the Verse of the Day every day at a consistent time. Using again while active turns it off."
+    votd_help_text = "$votd\nPrints the Verse of the Day that was fetched from online."
+    lookup_help_text = "$lookup [book] [chapter:verse] [book_num|optional]\nLooks up and prints out the verse that was searched."
+    help_text = "```{0}\n\n{1}\n\n{2}\n\n{3}```".format(h_help_text, dailyvotd_help_text, votd_help_text, lookup_help_text)
+    await send_message(ctx, help_text)
 
 
 @bot.command(
@@ -102,7 +131,7 @@ async def send_daily_verse_of_the_day(ctx, time: str = None):
 )
 async def send_verse_of_the_day(ctx):
     votd = get_votd_from_url()
-    await send_message(ctx, votd)
+    await send_message(ctx, remove_html_tags(votd))
 
 
 @bot.command(
@@ -110,12 +139,19 @@ async def send_verse_of_the_day(ctx):
     help="Looks up and prints out the verse that was searched.",
     brief="Looks up verse and prints it."
 )
-async def verse_lookup(ctx, book: str = None, chapter: str = None, verse: str = None):
-    if book is None or chapter is None or verse is None:
-        await send_message(ctx, "Unfortunately I cannot look that up. Check all values were entered.")
+async def verse_lookup(ctx, book: str = None, chapter_verse: str = None, book_num: str = None):
+    if book is None:
+        await send_message(ctx, "Unfortunately I cannot look that up. The Book was not provided.")
+    elif chapter_verse is None:
+        await send_message(ctx, "Unfortunately I cannot look that up. The Chapter:Verse was not provided.")
+    elif ":" not in chapter_verse:
+        await send_message(ctx, "Unfortunately I cannot look that up. The Chapter:Verse was not in the proper format.")
     else:
-        verse_text = get_verse_from_lookup_url(book.lower(), chapter, verse)
-        await send_message(ctx, verse_text)
+        if book_num is not None:
+            if int(book_num) > 3 or int(book_num) < 1:
+                await send_message(ctx, "Unfortunately I cannot look that up. The entered Book Number does not exist.")
+        verse_text = get_verse_from_lookup_url(book.lower(), chapter_verse, book_num)
+        await send_message(ctx, remove_html_tags(verse_text))
 
 
 async def filter_message(message):
@@ -124,6 +160,16 @@ async def filter_message(message):
             if is_banned_word(word, message.content.lower()):
                 await delete_message(message)
                 break
+
+
+async def delete_message(message):
+    await message.delete()
+    response = "{0} no swearing while I'm around.".format(message.author.mention)
+    await send_message(message, response)
+
+
+async def send_message(message, msg):
+    await message.channel.send(msg, allowed_mentions=discord.AllowedMentions().all())
 
 
 def is_banned_word(swear_word: str, sentence: str) -> bool:
@@ -145,14 +191,14 @@ def is_banned_word(swear_word: str, sentence: str) -> bool:
     return word in swear_words
 
 
-async def delete_message(message):
-    await message.delete()
-    response = "{0} no swearing while I'm around.".format(message.author.mention)
-    await send_message(message, response)
-
-
-async def send_message(message, msg):
-    await message.channel.send(msg, allowed_mentions=discord.AllowedMentions().all())
+def remove_html_tags(text: str) -> str:
+    has_tag = "<" in text
+    while has_tag:
+        open_tag_index = text.find("<")
+        end_tag_index = text.find(">") + 1
+        text = text.replace(text[open_tag_index:end_tag_index], "")
+        has_tag = "<" in text
+    return text
 
 
 def convert_twenty_four_to_twelve(time: str) -> str:
@@ -172,25 +218,3 @@ def convert_twenty_four_to_twelve(time: str) -> str:
 
 
 bot.run(TOKEN)
-
-# verse_lookup_url_base = "https://www.biblegateway.com/passage/?search="
-# verse_lookup_url_base = "https://www.bible.com/bible/59/"
-# book_names_abbreviations = {
-#     "GENESIS": "GEN", "EXODUS": "EXO", "LEVITICUS": "LEV", "NUMBERS": "NUM",
-#     "DEUTERONOMY": "DEU", "JOSHUA": "JOS", "JUDGES": "JDG", "RUTH": "RUT",
-#     "1 SAMUEL": "1SA", "2 SAMUEL": "2SA", "1 KINGS": "1KI", "2 KINGS": "2KI",
-#     "1 CHRONICLES": "1CH", "2 CHRONICLES": "2CH", "EZRA": "EZR", "NEHEMIAH": "NEH",
-#     "ESTHER": "EST", "JOB": "JOB", "PSALM": "PSA", "PROVERBS": "PRO",
-#     "ECCLESIASTES": "ECC", "SONG OF SOLOMON": "SNG", "ISAIAH": "ISA", "JEREMIAH": "JER",
-#     "LAMENTATIONS": "LAM", "EZEKIEL": "EZK", "DANIEL": "DAN", "HOSEA": "HOS",
-#     "JOEL": "JOL", "AMOS": "AMO", "OBADIAH": "OBA", "JONAH": "JON",
-#     "MICAH": "MIC", "NAHUM": "NAM", "HABAKKUK": "HAB", "ZEPHANIAH": "ZEP",
-#     "HAGGAI": "HAG", "ZECHARIAH": "ZEC", "MALACHI": "MAL",
-#     "MATTHEW": "MAT", "MARK": "MRK", "LUKE": "LUK", "JOHN": "JHN",
-#     "ACTS": "ACT", "ROMANS": "ROM", "1 CORINTHIANS": "1CO", "2 CORINTHIANS": "2CO",
-#     "GALATIANS": "GAL", "EPHESIANS": "EPH", "PHILIPPIANS": "PHP", "COLOSSIANS": "COL",
-#     "1 THESSALONIANS": "1TH", "2 THESSALONIANS": "2TH", "1 TIMOTHY": "1TI", "2 TIMOTHY": "2TI",
-#     "TITUS": "TIT", "PHILEMON": "PHM", "HEBREWS": "HEB", "JAMES": "JAS",
-#     "1 PETER": "1PE", "2 PETER": "2PE", "1 JOHN": "1JN", "2 JOHN": "2JN",
-#     "3 JOHN": "3JN", "JUDE": "JUD", "REVELATIONS": "REV"
-# }
