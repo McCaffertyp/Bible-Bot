@@ -13,6 +13,7 @@ import discord
 import threading
 import http.client
 import html as html_helper
+from util import logger
 from discord.ext import commands
 from dotenv import load_dotenv
 from urllib.request import urlopen
@@ -24,7 +25,14 @@ BIBLE_DICT_AVG_VERSES = "Average Verses"
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
-GUILD = os.getenv("DISCORD_GUILD")
+GUILD_EBC = os.getenv("DISCORD_EBC_GUILD")
+GUILD_SQUEEZE = os.getenv("DISCORD_SQUEEZE_GUILD")
+use_ebc = True
+
+if use_ebc:
+    GUILD = GUILD_EBC
+else:
+    GUILD = GUILD_SQUEEZE
 
 intents = discord.Intents().all()
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("$"), intents=intents)
@@ -179,11 +187,16 @@ async def verse_lookup_random(ctx):
                 book_names.append(book_name)
 
         random_book: str = book_names[random.randint(0, (len(book_names) - 1))]
+        logger.d("Random book fetched = {0}".format(random_book))
         random_book_stats = bible_dict.get(random_book)
         random_book_chapters = int(random_book_stats[BIBLE_DICT_CHAPTERS])
+        logger.d("Random book chapter count = {0}".format(random_book_chapters))
         random_book_chapter = random.randint(1, random_book_chapters)
+        logger.d("Random book chapter chosen = {0}".format(random_book_chapter))
         random_book_verses = int(random_book_stats[str(random_book_chapter)])
+        logger.d("Random book verse count for selected chapter = {1}".format(random_book_chapter, random_book_verses))
         random_book_verse = random.randint(1, random_book_verses)
+        logger.d("Random book verse selected = {0}".format(random_book_verse))
         random_chapter_verse = "{0}:{1}".format(random_book_chapter, random_book_verse)
 
         if " " in random_book:
