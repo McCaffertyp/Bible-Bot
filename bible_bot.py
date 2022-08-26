@@ -28,7 +28,7 @@ load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD_EBC = os.getenv("DISCORD_EBC_GUILD")
 GUILD_SQUEEZE = os.getenv("DISCORD_SQUEEZE_GUILD")
-use_ebc = False
+use_ebc = True
 
 if use_ebc:
     GUILD = GUILD_EBC
