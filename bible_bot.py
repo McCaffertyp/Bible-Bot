@@ -28,7 +28,7 @@ load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD_EBC = os.getenv("DISCORD_EBC_GUILD")
 GUILD_SQUEEZE = os.getenv("DISCORD_SQUEEZE_GUILD")
-use_ebc = True
+use_ebc = False
 
 if use_ebc:
     GUILD = GUILD_EBC
@@ -192,19 +192,24 @@ async def bible_quizzing(ctx, option: str = None):
     elif option == "word":
         verse_words = verse_text.split(" ")
         remove_word = verse_words[random.randint(0, (len(verse_words) - 1))].replace(",", "")
-        quiz_verse = random_verse.replace(remove_word, "_")
+        quiz_verse = replace_characters(random_verse, remove_word, "_")
         in_quiz[quizzer] = remove_word
     else:
-        quiz_verse = random_verse
         verse_words = verse_text.split(" ")
         remove_word_count = random.randint(2, (len(verse_words) - 1))
-        remove_start_index = random.randint(0, (len(verse_words) - remove_word_count))
-        all_words = ""
-        for i in range(remove_start_index, (remove_start_index + remove_word_count)):
-            remove_word = verse_words[i].replace(",", "")
-            quiz_verse = quiz_verse.replace(remove_word, "_")
-            all_words = "{0},{1}".format(all_words, remove_word)
-        in_quiz[quizzer] = all_words[:(len(all_words) - 1)]
+        remove_start_word_index = random.randint(0, (len(verse_words) - remove_word_count))
+        remove_end_word_index = remove_start_word_index + remove_word_count - 1
+        remove_start_word = verse_words[remove_start_word_index]
+        remove_end_word = verse_words[remove_end_word_index]
+        remove_sentence = random_verse[random_verse.find(remove_start_word):(random_verse.find(remove_end_word) + len(remove_end_word))]
+        quiz_verse = replace_characters(random_verse, remove_sentence, "_")
+        in_quiz[quizzer] = remove_sentence
+        # all_words = ""
+        # for i in range(remove_start_index, (remove_start_index + remove_word_count)):
+        #     remove_word = verse_words[i].replace(",", "")
+        #     quiz_verse = replace_characters(quiz_verse, remove_word, "_")
+        #     all_words = "{0},{1}".format(all_words, remove_word)
+        # in_quiz[quizzer] = all_words[1:(len(all_words) - 1)]
 
     await send_message(ctx, quiz_verse)
 
