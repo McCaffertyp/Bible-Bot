@@ -312,8 +312,12 @@ async def submit_hangman_guess(ctx, guess: str = None):
             updated_progress = update_hangman_puzzle_progress(guess, puzzle_solution, puzzle_progress)
             playing_hangman[player][HANGMAN_DICT_PROGRESS] = updated_progress
         else:
-            attempts_remaining = int(playing_hangman[player][HANGMAN_DICT_MISTAKES_LEFT])
-            playing_hangman[player][HANGMAN_DICT_MISTAKES_LEFT] = attempts_remaining - 1
+            mistakes_remaining = int(playing_hangman[player][HANGMAN_DICT_MISTAKES_LEFT])
+            updated_mistakes_remaining = mistakes_remaining - 1
+            if updated_mistakes_remaining == 0:
+                status_update = "Unfortunate, {0}. You ran out of mistakes. Here's the verse:\n{1}".format(player_mention, puzzle_solution)
+                await send_message(ctx, handle_discord_formatting(status_update))
+            playing_hangman[player][HANGMAN_DICT_MISTAKES_LEFT] = updated_mistakes_remaining
 
         playing_hangman[player][HANGMAN_DICT_GUESSES] = "{0}{1}".format(previous_guesses, guess)
         current_progress = playing_hangman[player][HANGMAN_DICT_PROGRESS]
