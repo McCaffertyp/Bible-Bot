@@ -57,7 +57,7 @@ playing_hangman = {}
 # Bot events
 @bot.event
 async def on_ready():
-    print('Successfully logged into {0} as {1.user}'.format(GUILD, bot))
+    logger.i('Successfully logged into {0} as {1.user}'.format(GUILD, bot))
 
 
 @bot.event
@@ -296,7 +296,6 @@ async def submit_hangman_guess(ctx, guess: str = None):
             return
 
         guess = guess.lower()
-        print(playing_hangman)
         try:
             previous_guesses = playing_hangman[player][HANGMAN_DICT_GUESSES]
             if guess in previous_guesses:
