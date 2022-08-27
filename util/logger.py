@@ -15,3 +15,7 @@ def w(message):
     current_time = get_current_datetime()
     print("{0} [Warning]/{1}".format(current_time, message))
 
+
+def e(message):
+    current_time = get_current_datetime()
+    print("{0} [Error]/{1}".format(current_time, message))

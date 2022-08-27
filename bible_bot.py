@@ -34,6 +34,7 @@ intents = discord.Intents().all()
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("$"), intents=intents)
 
 # Constants
+RETURN_ERROR = "error"
 BIBLE_DICT_NAME = "Name"
 BIBLE_DICT_CHAPTERS = "Chapters"
 BIBLE_DICT_TOTAL_VERSES = "Total Verses"
@@ -141,7 +142,16 @@ async def verse_lookup(ctx, book: str = None, chapter_verse: str = None, book_nu
             if int(book_num) > 3 or int(book_num) < 1:
                 await send_message(ctx, "Unfortunately I cannot look that up. The entered Book Number does not exist.")
         verse_text = get_verse_from_lookup_url(book.lower(), chapter_verse, book_num)
-        await send_message(ctx, remove_html_tags(verse_text))
+        if verse_text == "error":
+            if book_num is not None:
+                logger.w("Verse lookup \"{0} {1} {2}\" is not a valid reference.".format(book_num, book, chapter_verse))
+                await send_message(ctx, "Verse lookup \"{0} {1} {2}\" is not a valid reference.".format(book_num, book, chapter_verse))
+            else:
+                logger.w("Verse lookup \"{0} {1}\" is not a valid reference.".format(book, chapter_verse))
+                await send_message(ctx, "Verse lookup \"{0} {1}\" is not a valid reference.".format(book, chapter_verse))
+            return
+        else:
+            await send_message(ctx, remove_html_tags(verse_text))
 
 
 @bot.command(
@@ -444,8 +454,9 @@ def get_verse_from_lookup_url(book: str, chapter_verse: str, book_num: str = Non
     verse_text_start_search = "<div class=\"crossref-verse\">"
     verse_text_sub_start_search = "<p>"
     verse_text_search_start_index = html.find(verse_text_start_search)
-    verse_text_start_index = html.find(verse_text_sub_start_search, verse_text_search_start_index) + len(
-        verse_text_sub_start_search)
+    if verse_text_search_start_index == -1:
+        return RETURN_ERROR
+    verse_text_start_index = html.find(verse_text_sub_start_search, verse_text_search_start_index) + len(verse_text_sub_start_search)
     verse_text_end_index = html.find("</p>", verse_text_start_index)
 
     verse_text = html[verse_text_start_index:verse_text_end_index]
@@ -468,7 +479,7 @@ def get_verse_from_keyword_url(word) -> str:
         verse_text_start_search = "div class=\"bible-item-text col-sm-9\">"
         verse_text_start_index = html.find(verse_text_start_search)
         if verse_text_start_index == -1:
-            return "error"
+            return RETURN_ERROR
     verse_text_end_index = html.find("<div class=\"bible-item-extras\">", verse_text_start_index)
 
     verse_ref_start_search = "<a class=\"bible-item-title\""
