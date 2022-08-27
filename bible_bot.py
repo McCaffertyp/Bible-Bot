@@ -285,7 +285,7 @@ async def bible_quizzing(context: Context, option: str = None):
         remove_word = replace_any(verse_words[random.randint(0, (len(verse_words) - 1))], [",", ";", ".", ":"], "")
         quiz_verse = replace_characters(random_verse, remove_word, "_")
         quizzing[quizzer] = remove_word
-    else:
+    elif option == "sentence":
         verse_words = verse_text.split(" ")
         remove_word_count = random.randint(2, (len(verse_words) - 1))
         remove_start_word_index = random.randint(0, (len(verse_words) - remove_word_count))
@@ -301,6 +301,9 @@ async def bible_quizzing(context: Context, option: str = None):
         #     quiz_verse = replace_characters(quiz_verse, remove_word, "_")
         #     all_words = "{0},{1}".format(all_words, remove_word)
         # quizzing[quizzer] = all_words[1:(len(all_words) - 1)]
+    else:
+        await send_message(context, "{0}, that option is unsupported.".format(context.author.mention))
+        return
 
     await send_message(context, "{0}, your quiz is:\n{1}".format(context.author.mention, quiz_verse))
 
