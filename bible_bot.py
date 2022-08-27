@@ -3,7 +3,7 @@
 Created on Wed Aug 24 04:35:00 2022
 
 @author: Paul McCafferty
-@version: 5.33
+@version: 5.34
 """
 
 # bot.py
@@ -727,7 +727,7 @@ def remove_html_tags(text: str) -> str:
 def remove_non_alphabet(s: str) -> str:
     base_word = ""
     for c in s:
-        if c in ENGLISH_ALPHABET:
+        if c.lower() in ENGLISH_ALPHABET:
             base_word = "{0}{1}".format(base_word, c)
     return base_word
 
