@@ -3,7 +3,7 @@
 Created on Wed Aug 24 04:35:00 2022
 
 @author: Paul McCafferty
-@version: 5.32
+@version: 5.33
 """
 
 # bot.py
@@ -644,7 +644,7 @@ def get_verse_from_keyword_url(word) -> str:
 
 
 def get_random_verse() -> str:
-    with open("books_of_the_bible.csv") as csv_file:
+    with open("bible_data_esv.csv") as csv_file:
         csv_reader = csv.DictReader(csv_file)
         bible_dict = {}
         book_names = []
