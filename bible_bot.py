@@ -3,7 +3,7 @@
 Created on Wed Aug 24 04:35:00 2022
 
 @author: Paul McCafferty
-@version: 5.30
+@version: 5.32
 """
 
 # bot.py
@@ -282,7 +282,8 @@ async def bible_quizzing(context: Context, option: str = None):
         quizzing[quizzer] = verse_reference
     elif option == "word":
         verse_words = verse_text.split(" ")
-        remove_word = replace_any(verse_words[random.randint(0, (len(verse_words) - 1))], [",", ";", ".", ":"], "")
+        full_remove_word = verse_words[random.randint(0, (len(verse_words) - 1))]
+        remove_word = remove_non_alphabet(full_remove_word)
         quiz_verse = replace_characters(random_verse, remove_word, "_")
         quizzing[quizzer] = remove_word
     elif option == "sentence":
@@ -723,10 +724,12 @@ def remove_html_tags(text: str) -> str:
     return text
 
 
-def replace_any(s: str, c_list: list, r: str) -> str:
-    for c in c_list:
-        s.replace(c, r)
-    return s
+def remove_non_alphabet(s: str) -> str:
+    base_word = ""
+    for c in s:
+        if c in ENGLISH_ALPHABET:
+            base_word = "{0}{1}".format(base_word, c)
+    return base_word
 
 
 def replace_characters(s: str, c: str, r: str) -> str:
