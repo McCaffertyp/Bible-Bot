@@ -3,7 +3,7 @@
 Created on Wed Aug 24 04:35:00 2022
 
 @author: Paul McCafferty
-@version: 6.37
+@version: 6.38
 """
 
 # bot.py
@@ -720,7 +720,7 @@ def get_random_verse(book: str = None) -> str:
             if not skip_first_row:
                 skip_first_row = True
             else:
-                book_name = row[BIBLE_DICT_NAME]
+                book_name = row[BIBLE_DICT_NAME].lower()
                 bible_dict[book_name] = row
                 book_names.append(book_name)
 
@@ -728,11 +728,11 @@ def get_random_verse(book: str = None) -> str:
             book: str = book_names[random.randint(0, (len(book_names) - 1))]
             logger.d("Random book fetched = {0}".format(book))
         else:
-            if book not in bible_dict:
+            if book.lower() not in bible_dict:
                 logger.e("Was unable to fetch provided book: {0}".format(book))
                 return "error"
             logger.d("Using user supplied book = {0}".format(book))
-        random_book_stats = bible_dict.get(book)
+        random_book_stats = bible_dict.get(book.lower())
         random_book_chapters = int(random_book_stats[BIBLE_DICT_CHAPTERS])
         logger.d("Random book chapter count = {0}".format(random_book_chapters))
         random_book_chapter = random.randint(1, random_book_chapters)
