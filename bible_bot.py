@@ -3,7 +3,7 @@
 Created on Wed Aug 24 04:35:00 2022
 
 @author: Paul McCafferty
-@version: 6.38
+@version: 6.39
 """
 
 # bot.py
@@ -62,6 +62,7 @@ ENGLISH_ALPHABET = "abcdefghijklmnopqrstuvwxyz"
 swear_words = [line.split("\n")[0] for line in open("swear_words.txt", "r").readlines()]
 operators = {"+": operator.add, "-": operator.sub, "*": operator.mul, "/": operator.truediv, "^": operator.pow}
 game_channels = {GAME_CHANNEL_QUIZ: GAME_CHANNEL_QUIZ_DEFAULT_NAME, GAME_CHANNEL_HANGMAN: GAME_CHANNEL_HANGMAN_DEFAULT_NAME}
+excluded_quiz_words = [line.split("\n")[0] for line in open("excluded_quiz_words.txt", "r").readlines()]
 quizzing = {}
 playing_hangman = {}
 
@@ -287,6 +288,10 @@ async def bible_quizzing(context: Context, option: str = None, *, book: str = No
         verse_words = verse_text.split(" ")
         full_remove_word = verse_words[random.randint(0, (len(verse_words) - 1))]
         remove_word = remove_non_alphabet(full_remove_word)
+        while remove_word.lower() in excluded_quiz_words:
+            logger.d("Tried to remove \"{0}\" from verse. Fetching new word...".format(remove_word))
+            full_remove_word = verse_words[random.randint(0, (len(verse_words) - 1))]
+            remove_word = remove_non_alphabet(full_remove_word)
         quiz_verse = replace_characters(random_verse, remove_word, "_")
         quizzing[quizzer] = remove_word
     elif option == "sentence":
@@ -422,6 +427,7 @@ async def submit_hangman_guess(context: Context, guess: str = None):
         except KeyError as error:
             previous_guesses = ""
             logger.w("Tried to access a non-existent key")
+            logger.e(error)
 
         puzzle_solution = playing_hangman[player][HANGMAN_DICT_SOLUTION]
         if guess in puzzle_solution.lower():
