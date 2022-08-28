@@ -118,7 +118,7 @@ async def print_help(context: Context):
     rlookup_help_text = "$rlookup\nLooks up and prints out a random verse."
     keyword_help_text = "$keyword [word]\nTakes in a singular keyword and searches online for the top related verse to print out as a response."
     quiz_help_text = "$quiz [ref/word/sentence]\nSends a random verse with either the reference, a single word, or a sentence missing for the user to solve."
-    hangman_help_text = "$hangman [easy/medium/hard/status]\nUsing hangman starts a game. Three modes and a status are the accepted arguments."
+    hangman_help_text = "$hangman [easy/medium/hard/status/quit] (none/low/medium/high)\nUsing hangman starts a game. Three modes, status and quit are the accepted arguments. Change prefill with secondary option."
     hguess_help_text = "$hguess [guess]\nUsed to submit a guess to an ongoing hangman puzzle for the message sender."
     math_help_text = "$math [number_a] [operator] [number_b]\nProvided two numbers and a method of operation, the bot will produce the result. Supported operators: +, -, *, /, ^"
     help_text = "```{0}\n\n{1}\n\n{2}\n\n{3}\n\n{4}\n\n{5}\n\n{6}\n\n{7}\n\n{8}\n\n{9}\n\n{10}\n\n{11}```".format(
@@ -315,7 +315,7 @@ async def bible_quizzing(context: Context, option: str = None):
 
 @bot.command(
     name="hangman",
-    help="Using hangman starts a game. Three modes and a status are the accepted arguments.",
+    help="Using hangman starts a game. Three modes, status and quit are the accepted arguments. Change prefill with secondary option.",
     brief="Plays hangman with the user."
 )
 async def play_hangman(context: Context, option: str = None, prefill_level: str = HANGMAN_PREFILL_LEVEL_MEDIUM):
