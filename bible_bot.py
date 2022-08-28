@@ -318,7 +318,7 @@ async def bible_quizzing(context: Context, option: str = None):
     help="Using hangman starts a game. Three modes, status and quit are the accepted arguments. Change prefill with secondary option.",
     brief="Plays hangman with the user."
 )
-async def play_hangman(context: Context, option: str = None, prefill_level: str = HANGMAN_PREFILL_LEVEL_MEDIUM):
+async def play_hangman(context: Context, option: str = None, prefill_level: str = HANGMAN_PREFILL_LEVEL_NONE):
     if option is None:
         await send_message(context, "No hangman option was provided. Please use $h for options.")
     else:
