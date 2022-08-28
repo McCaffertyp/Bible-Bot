@@ -3,7 +3,7 @@
 Created on Wed Aug 24 04:35:00 2022
 
 @author: Paul McCafferty
-@version: 6.36
+@version: 6.37
 """
 
 # bot.py
@@ -25,12 +25,8 @@ load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD_EBC = os.getenv("DISCORD_EBC_GUILD")
 GUILD_SQUEEZE = os.getenv("DISCORD_SQUEEZE_GUILD")
-use_ebc = True
-
-if use_ebc:
-    GUILD = GUILD_EBC
-else:
-    GUILD = GUILD_SQUEEZE
+# GUILD = GUILD_SQUEEZE
+GUILD = GUILD_EBC
 
 intents = discord.Intents().all()
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("$"), intents=intents)
@@ -117,7 +113,7 @@ async def print_help(context: Context):
     lookup_help_text = "$lookup [book] [chapter:verse] (book_num)\nLooks up and prints out the verse that was searched."
     rlookup_help_text = "$rlookup\nLooks up and prints out a random verse."
     keyword_help_text = "$keyword [word]\nTakes in a singular keyword and searches online for the top related verse to print out as a response."
-    quiz_help_text = "$quiz [ref/word/sentence]\nSends a random verse with either the reference, a single word, or a sentence missing for the user to solve."
+    quiz_help_text = "$quiz [ref/word/sentence (book)\nSends a random verse with either the reference, a single word, or a sentence missing for the user to solve."
     hangman_help_text = "$hangman [easy/medium/hard/status/quit] (none/low/medium/high)\nUsing hangman starts a game. Three modes, status and quit are the accepted arguments. Change prefill with secondary option."
     hguess_help_text = "$hguess [guess]\nUsed to submit a guess to an ongoing hangman puzzle for the message sender."
     math_help_text = "$math [number_a] [operator] [number_b]\nProvided two numbers and a method of operation, the bot will produce the result. Supported operators: +, -, *, /, ^"
@@ -251,10 +247,10 @@ async def search_keyword(context: Context, keyword: str = None):
 
 @bot.command(
     name="quiz",
-    help="Sends a random verse with either the reference, a single word, or a sentence missing for the user to solve.",
+    help="Sends a random verse with either the reference, a single word, or a sentence missing for the user to solve. User can select book.",
     brief="Quizzes the user on a random verse."
 )
-async def bible_quizzing(context: Context, option: str = None):
+async def bible_quizzing(context: Context, option: str = None, *, book: str = None):
     channel_exists = await check_channel_exists(context, GAME_CHANNEL_QUIZ, game_channels[GAME_CHANNEL_QUIZ])
     if not channel_exists:
         return
@@ -264,14 +260,17 @@ async def bible_quizzing(context: Context, option: str = None):
         return
 
     quizzer = str(context.author)
+    username = quizzer.split("#")[0]
     if option is None:
-        username = quizzer.split("#")[0]
         await send_message(context, "{0} provided no option. Choosing a random one.".format(username))
         options = ["ref", "word", "sentence"]
         option = options[random.randint(0, 2)]
         await send_message(context, "{0} your quizzing option is on: {1}".format(username, option))
 
-    random_verse = get_random_verse()
+    random_verse = get_random_verse(book)
+    if random_verse == RETURN_ERROR:
+        await send_message(context, "{0} that book does not exist.".format(username))
+        return
     verse_text_start = random_verse.find("\"") + 1
     verse_text_end = random_verse.find("\"", verse_text_start)
     verse_text = random_verse[verse_text_start:verse_text_end]
@@ -711,7 +710,7 @@ def get_verse_from_keyword_url(word) -> str:
     return "\"{0}\" - {1} ESV".format(verse_text, reference)
 
 
-def get_random_verse() -> str:
+def get_random_verse(book: str = None) -> str:
     with open("bible_data_esv.csv") as csv_file:
         csv_reader = csv.DictReader(csv_file)
         bible_dict = {}
@@ -725,9 +724,15 @@ def get_random_verse() -> str:
                 bible_dict[book_name] = row
                 book_names.append(book_name)
 
-        random_book: str = book_names[random.randint(0, (len(book_names) - 1))]
-        logger.d("Random book fetched = {0}".format(random_book))
-        random_book_stats = bible_dict.get(random_book)
+        if book is None:
+            book: str = book_names[random.randint(0, (len(book_names) - 1))]
+            logger.d("Random book fetched = {0}".format(book))
+        else:
+            if book not in bible_dict:
+                logger.e("Was unable to fetch provided book: {0}".format(book))
+                return "error"
+            logger.d("Using user supplied book = {0}".format(book))
+        random_book_stats = bible_dict.get(book)
         random_book_chapters = int(random_book_stats[BIBLE_DICT_CHAPTERS])
         logger.d("Random book chapter count = {0}".format(random_book_chapters))
         random_book_chapter = random.randint(1, random_book_chapters)
@@ -738,16 +743,16 @@ def get_random_verse() -> str:
         logger.d("Random book verse selected = {0}".format(random_book_verse))
         random_chapter_verse = "{0}:{1}".format(random_book_chapter, random_book_verse)
 
-        if " " in random_book:
-            if "Song" in random_book:
-                verse_text = get_verse_from_lookup_url(random_book, random_chapter_verse, None)
+        if " " in book:
+            if "Song" in book:
+                verse_text = get_verse_from_lookup_url(book, random_chapter_verse, None)
             else:
-                random_book_split = random_book.split(" ")
+                random_book_split = book.split(" ")
                 bna = random_book_split[1]
                 bnu = random_book_split[0]
                 verse_text = get_verse_from_lookup_url(bna, random_chapter_verse, bnu)
         else:
-            verse_text = get_verse_from_lookup_url(random_book, random_chapter_verse, None)
+            verse_text = get_verse_from_lookup_url(book, random_chapter_verse, None)
 
         return remove_html_tags(verse_text)
 
