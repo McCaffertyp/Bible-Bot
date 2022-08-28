@@ -3,7 +3,7 @@
 Created on Wed Aug 24 04:35:00 2022
 
 @author: Paul McCafferty
-@version: 5.35
+@version: 6.36
 """
 
 # bot.py
@@ -51,6 +51,10 @@ HANGMAN_DICT_SOLUTION = "solution"
 HANGMAN_DICT_PROGRESS = "progress"
 HANGMAN_DICT_MISTAKES_LEFT = "attempts"
 HANGMAN_DICT_GUESSES = "guesses"
+HANGMAN_PREFILL_LEVEL_NONE = "none"
+HANGMAN_PREFILL_LEVEL_LOW = "low"
+HANGMAN_PREFILL_LEVEL_MEDIUM = "medium"
+HANGMAN_PREFILL_LEVEL_HIGH = "high"
 VOTD_BASE_URL = "https://dailyverses.net/"
 VERSE_LOOKUP_BASE_URL = "https://www.openbible.info/labs/cross-references/search?q="
 KEYWORD_SEARCH_BASE_URL = "https://www.biblegateway.com/quicksearch/?quicksearch="
@@ -314,10 +318,16 @@ async def bible_quizzing(context: Context, option: str = None):
     help="Using hangman starts a game. Three modes and a status are the accepted arguments.",
     brief="Plays hangman with the user."
 )
-async def play_hangman(context: Context, option: str = None):
+async def play_hangman(context: Context, option: str = None, prefill_level: str = HANGMAN_PREFILL_LEVEL_MEDIUM):
     if option is None:
-        await send_message(context, "I can't do anything for hangman with no option provided. Use $h for options.")
+        await send_message(context, "No hangman option was provided. Please use $h for options.")
     else:
+        prefill_level = prefill_level.lower()
+        if (prefill_level != HANGMAN_PREFILL_LEVEL_NONE and prefill_level != HANGMAN_PREFILL_LEVEL_LOW and
+                prefill_level != HANGMAN_PREFILL_LEVEL_MEDIUM and prefill_level != HANGMAN_PREFILL_LEVEL_HIGH):
+            await send_message(context, "Prefill level for the verse specified is unrecognized. Please use $h for options.")
+            return
+
         channel_exists = await check_channel_exists(context, GAME_CHANNEL_HANGMAN, game_channels[GAME_CHANNEL_HANGMAN])
         if not channel_exists:
             return
@@ -326,7 +336,7 @@ async def play_hangman(context: Context, option: str = None):
         if not correct_channel:
             return
 
-        if option != "easy" and option != "medium" and option != "hard" and option != "status":
+        if option != "easy" and option != "medium" and option != "hard" and option != "status" and option != "quit":
             await send_message(context, "The entered option \"{0}\" is unsupported.".format(option))
             return
 
@@ -339,8 +349,22 @@ async def play_hangman(context: Context, option: str = None):
                 return
             else:
                 current_progress = playing_hangman[player][HANGMAN_DICT_PROGRESS]
-                attempts_left = playing_hangman[player][HANGMAN_DICT_MISTAKES_LEFT]
-                status_update = "{0} - Progress:\n{1}\n\nRemaining Mistakes: {2}".format(player_mention, current_progress, attempts_left)
+                remaining_mistakes = playing_hangman[player][HANGMAN_DICT_MISTAKES_LEFT]
+                remaining_letters = get_remaining_letters(playing_hangman[player][HANGMAN_DICT_GUESSES])
+                status_update = "{0} - Progress:\n{1}\n\nRemaining Mistakes: {2}\n\nRemaining Letters: {3}".format(
+                    player_mention, current_progress, remaining_mistakes, remaining_letters
+                )
+                await send_message(context, handle_discord_formatting(status_update))
+                return
+
+        if option == "quit":
+            if player not in playing_hangman:
+                await send_message(context, "{0} you have no ongoing games! Start one with: $hangman [difficulty]".format(player_mention))
+                return
+            else:
+                puzzle_solution = playing_hangman[player][HANGMAN_DICT_SOLUTION]
+                status_update = "{0} Sorry you chose to quit :(\nHere's your finished verse:\n{1}".format(player_mention, puzzle_solution)
+                playing_hangman.__delitem__(player)
                 await send_message(context, handle_discord_formatting(status_update))
                 return
 
@@ -355,7 +379,7 @@ async def play_hangman(context: Context, option: str = None):
         verse_reference = random_verse[verse_reference_start:verse_reference_end]
 
         puzzle_answer = "\"{0}\" - {1}".format(verse_text, verse_reference)
-        puzzle_progress = create_hangman_puzzle(puzzle_answer)
+        puzzle_progress = create_hangman_puzzle(puzzle_answer, prefill_level)
 
         playing_hangman[player] = dict()
         playing_hangman[player][HANGMAN_DICT_SOLUTION] = puzzle_answer
@@ -422,8 +446,11 @@ async def submit_hangman_guess(context: Context, guess: str = None):
             playing_hangman.__delitem__(player)
             await send_message(context, handle_discord_formatting(status_update))
         else:
-            attempts_left = playing_hangman[player][HANGMAN_DICT_MISTAKES_LEFT]
-            status_update = "{0} - Progress:\n{1}\n\nRemaining Mistakes: {2}".format(player_mention, current_progress, attempts_left)
+            remaining_mistakes = playing_hangman[player][HANGMAN_DICT_MISTAKES_LEFT]
+            remaining_letters = get_remaining_letters(playing_hangman[player][HANGMAN_DICT_GUESSES])
+            status_update = "{0} - Progress:\n{1}\n\nRemaining Mistakes: {2}\n\nRemaining Letters: {3}".format(
+                player_mention, current_progress, remaining_mistakes, remaining_letters
+            )
             await send_message(context, handle_discord_formatting(status_update))
 
 
@@ -537,14 +564,46 @@ def convert_twenty_four_to_twelve(time: str) -> str:
         return "{0}:{1} PM".format(23, minute)
 
 
-def create_hangman_puzzle(verse: str) -> str:
-    puzzle = ""
-    for c in verse:
-        if c.lower() in ENGLISH_ALPHABET:
-            puzzle = "{0}_".format(puzzle)
+def create_hangman_puzzle(verse: str, prefill_level: str) -> str:
+    if prefill_level == HANGMAN_PREFILL_LEVEL_NONE:
+        puzzle = ""
+        for c in verse:
+            if c.lower() in ENGLISH_ALPHABET:
+                puzzle = "{0}_".format(puzzle)
+            else:
+                puzzle = "{0}{1}".format(puzzle, c)
+        return puzzle
+    else:
+        words_in_verse = get_only_words(verse.split())
+        sectioned_puzzle = section_hangman_puzzle(words_in_verse)
+        if prefill_level == HANGMAN_PREFILL_LEVEL_LOW:
+            # Remove 3 out of every 4
+            removal_start_index = 1
+        elif prefill_level == HANGMAN_PREFILL_LEVEL_MEDIUM:
+            # Remove 1 out of every 2
+            removal_start_index = 2
+        elif prefill_level == HANGMAN_PREFILL_LEVEL_HIGH:
+            # Remove 1 out of every 4
+            removal_start_index = 3
         else:
-            puzzle = "{0}{1}".format(puzzle, c)
-    return puzzle
+            logger.e("Every prefill option for hangman was passed over. Should not be possible.")
+            return "error"
+
+        puzzle = verse
+        find_start_index = 0
+        for sub_section in sectioned_puzzle:
+            for i in range(0, len(sub_section)):
+                word = sub_section[i]
+                word_len = len(word)
+                if i >= removal_start_index:
+                    replace_start_index = puzzle.find(word, find_start_index)
+                    replace_end_index = replace_start_index + word_len
+                    puzzle = "{0}{1}{2}".format(
+                        puzzle[:replace_start_index], ("_" * word_len), puzzle[replace_end_index:]
+                    )
+                find_start_index += (word_len + 1)
+
+        return puzzle
 
 
 def ensure_valid_channel_name(channelType: ChannelType, channelName: str) -> str:
@@ -553,6 +612,15 @@ def ensure_valid_channel_name(channelType: ChannelType, channelName: str) -> str
     elif channelType == ChannelType.VOICE:
         channelName = channelName
     return channelName
+
+
+def get_only_words(verse_words: list) -> list:
+    words = []
+    for word in verse_words:
+        stripped_word = remove_non_alphabet(word)
+        if len(stripped_word) > 0:
+            words.append(stripped_word)
+    return words
 
 
 def get_votd_from_url() -> str:
@@ -684,6 +752,14 @@ def get_random_verse() -> str:
         return remove_html_tags(verse_text)
 
 
+def get_remaining_letters(guessed_letters: str) -> str:
+    remaining_letters = ""
+    for c in ENGLISH_ALPHABET:
+        if c not in guessed_letters:
+            remaining_letters = "{0}, {1}".format(remaining_letters, c)
+    return remaining_letters[2:]
+
+
 def handle_discord_formatting(text: str) -> str:
     discord_formatted = ""
     for c in text:
@@ -738,6 +814,15 @@ def replace_characters(s: str, c: str, r: str) -> str:
     for i in range(0, len(c), len(r)):
         full_replace_string = "{0}\\{1}".format(full_replace_string, r)
     return s.replace(c, full_replace_string)
+
+
+def section_hangman_puzzle(words_in_verse: list) -> list:
+    sections = []
+    sub_section_size = 4
+    for i in range(0, len(words_in_verse), sub_section_size):
+        sub_section = words_in_verse[i:(i + sub_section_size)]
+        sections.append(sub_section)
+    return sections
 
 
 def update_hangman_puzzle_progress(guess: str, solution: str, progress: str) -> str:
