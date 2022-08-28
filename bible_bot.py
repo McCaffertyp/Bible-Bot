@@ -3,7 +3,7 @@
 Created on Wed Aug 24 04:35:00 2022
 
 @author: Paul McCafferty
-@version: 5.34
+@version: 5.35
 """
 
 # bot.py
