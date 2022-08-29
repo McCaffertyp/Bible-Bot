@@ -65,13 +65,20 @@ def get_votd_from_url() -> str:
 
     verse_text_start_search = "<span class=\"v1\">"
     verse_text_start_index = html.find(verse_text_start_search) + len(verse_text_start_search)
-    verse_text_end_index = html.find("</span>", verse_text_start_index)
+    sub_span_style_search = "all-small-caps"
+    sub_span_style_start_index = html.find(sub_span_style_search, verse_text_start_index)
+    html_span_close_tag = "</span>"
+    if sub_span_style_start_index != -1:
+        sub_span_style_end_index = html.find(html_span_close_tag, sub_span_style_start_index)
+        verse_text_end_index = html.find(html_span_close_tag, (sub_span_style_end_index + len(html_span_close_tag)))
+    else:
+        verse_text_end_index = html.find(html_span_close_tag, verse_text_start_index)
 
     verse_ref_start_search = "class=\"vc\">"
     verse_ref_start_index = html.find(verse_ref_start_search) + len(verse_ref_start_search)
     verse_ref_end_index = html.find("</a>", verse_ref_start_index)
 
-    verse_text = html[verse_text_start_index:verse_text_end_index]
+    verse_text = StringHelper.remove_html_tags(html[verse_text_start_index:verse_text_end_index])
     reference = html[verse_ref_start_index:verse_ref_end_index]
     return "\"{0}\" - {1} ESV".format(verse_text, reference)
 
