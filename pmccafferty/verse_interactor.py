@@ -4,6 +4,9 @@ import http.client
 import random
 from urllib.request import urlopen
 
+from discord.ext.commands.context import Context
+
+import channel_interactor as ChannelInteractor
 import util.string as StringHelper
 from util import logger
 
@@ -17,6 +20,41 @@ BIBLE_DICT_AVG_VERSES = "Average Verses"
 VOTD_BASE_URL = "https://dailyverses.net/"
 VERSE_LOOKUP_BASE_URL = "https://www.openbible.info/labs/cross-references/search?q="
 KEYWORD_SEARCH_BASE_URL = "https://www.biblegateway.com/quicksearch/?quicksearch="
+
+
+async def lookup_verse(context: Context, book: str = None, chapter_verse: str = None, book_num: str = None):
+    if book is None:
+        await ChannelInteractor.send_message(context, "Unfortunately I cannot look that up. The Book was not provided.")
+    elif chapter_verse is None:
+        await ChannelInteractor.send_message(context, "Unfortunately I cannot look that up. The Chapter:Verse was not provided.")
+    elif ":" not in chapter_verse:
+        await ChannelInteractor.send_message(context, "Unfortunately I cannot look that up. The Chapter:Verse was not in the proper format.")
+    else:
+        if book_num is not None:
+            if int(book_num) > 3 or int(book_num) < 1:
+                await ChannelInteractor.send_message(context, "Unfortunately I cannot look that up. The entered Book Number does not exist.")
+        verse_text = get_verse_from_lookup_url(book.lower(), chapter_verse, book_num)
+        if verse_text == "error":
+            if book_num is not None:
+                logger.w("Verse lookup \"{0} {1} {2}\" is not a valid reference".format(book_num, book, chapter_verse))
+                await ChannelInteractor.send_message(context, "Verse lookup \"{0} {1} {2}\" is not a valid reference.".format(book_num, book, chapter_verse))
+            else:
+                logger.w("Verse lookup \"{0} {1}\" is not a valid reference".format(book, chapter_verse))
+                await ChannelInteractor.send_message(context, "Verse lookup \"{0} {1}\" is not a valid reference.".format(book, chapter_verse))
+            return
+        else:
+            await ChannelInteractor.send_message(context, StringHelper.remove_html_tags(verse_text))
+
+
+async def search_keyword(context: Context, keyword: str = None):
+    if keyword is None:
+        await ChannelInteractor.send_message(context, "Unfortunately nothing popped up for that keyword, since no keyword was entered.")
+    else:
+        verse_text = get_verse_from_keyword_url(keyword)
+        if verse_text == "error":
+            await ChannelInteractor.send_message(context, "Keyword \"{0}\" has 0 good matches.".format(keyword))
+        else:
+            await ChannelInteractor.send_message(context, StringHelper.remove_html_tags(verse_text))
 
 
 def get_votd_from_url() -> str:

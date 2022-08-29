@@ -3,7 +3,7 @@ from discord.ext.commands.context import Context
 
 import util.string as StringHelper
 import channel_interactor as ChannelInteractor
-import verse_helper as VerseHelper
+import verse_interactor as VerseInteractor
 from util import logger
 
 #############
@@ -23,8 +23,8 @@ class Hangman:
     def __init__(self, bot: Bot, guild_name: str):
         self.bot = bot
         self.guild_name = guild_name
-        self.game_name = "hangman"
-        self.game_channel_name = "bible-hangman"
+        self.game_name = ChannelInteractor.GAME_CHANNEL_HANGMAN
+        self.game_channel_name = ChannelInteractor.GAME_CHANNEL_HANGMAN_DEFAULT_NAME
         self.players = {}
 
     async def start_game(self, context: Context, option: str = None, prefill_level: str = HANGMAN_PREFILL_LEVEL_NONE):
@@ -75,7 +75,7 @@ class Hangman:
                     await ChannelInteractor.send_message(context, StringHelper.handle_discord_formatting(status_update))
                     return
 
-            random_verse = VerseHelper.get_random_verse()
+            random_verse = VerseInteractor.get_random_verse()
             verse_text_start = random_verse.find("\"") + 1
             verse_text_end = random_verse.find("\"", verse_text_start)
             verse_text = random_verse[verse_text_start:verse_text_end]
@@ -91,6 +91,7 @@ class Hangman:
             self.players[player] = dict()
             self.players[player][HANGMAN_DICT_SOLUTION] = puzzle_answer
             self.players[player][HANGMAN_DICT_PROGRESS] = puzzle_progress
+            self.players[player][HANGMAN_DICT_GUESSES] = []
             if option == "easy":
                 self.players[player][HANGMAN_DICT_MISTAKES_LEFT] = 10
             elif option == "medium":
@@ -106,60 +107,43 @@ class Hangman:
     async def submit_guess(self, context: Context, guess: str = None):
         if guess is None:
             await ChannelInteractor.send_message(context, "No guess was supplied!")
-        elif guess.lower() not in StringHelper.ENGLISH_ALPHABET:
+        elif len(guess) == 1 and guess.lower() not in StringHelper.ENGLISH_ALPHABET:
             await ChannelInteractor.send_message(context, "That guess is invalid!")
         else:
             player = str(context.author)
             player_mention = context.author.mention
             if player not in self.players:
-                await ChannelInteractor.send_message(context,
-                                                     "{0} you have no ongoing games! Start one with: $hangman [difficulty]".format(
-                                                         player_mention))
+                await ChannelInteractor.send_message(context, "{0} you have no ongoing games! Start one with: $hangman [difficulty]".format(player_mention))
                 return
 
             guess = guess.lower()
-            try:
-                previous_guesses = self.players[player][HANGMAN_DICT_GUESSES]
-                if guess in previous_guesses:
-                    await ChannelInteractor.send_message(context,
-                                                         "{0} you have already guessed that letter! Try a different one.".format(
-                                                             player_mention))
-                    return
-            except KeyError as error:
-                previous_guesses = ""
-                logger.w("Tried to access a non-existent key")
-                logger.e(error)
+            previous_guesses = self.players[player][HANGMAN_DICT_GUESSES]
+            if guess in previous_guesses:
+                await ChannelInteractor.send_message(context, "{0} you have already guessed that! Try something else.".format(player_mention))
+                return
 
             puzzle_solution = self.players[player][HANGMAN_DICT_SOLUTION]
             if guess in puzzle_solution.lower():
-                updated_progress = self.update_hangman_puzzle_progress(guess, player)
-                self.players[player][HANGMAN_DICT_PROGRESS] = updated_progress
+                if len(guess) == 1:
+                    updated_progress = self.update_hangman_puzzle_progress_letter_guess(guess, player)
+                    self.players[player][HANGMAN_DICT_PROGRESS] = updated_progress
+                else:
+                    updated_progress = self.update_hangman_puzzle_progress_word_guess(guess, player)
+                    if updated_progress == "false":
+                        await self.update_mistakes(context, player, player_mention, puzzle_solution)
+                    else:
+                        self.players[player][HANGMAN_DICT_PROGRESS] = updated_progress
             else:
-                mistakes_remaining = int(self.players[player][HANGMAN_DICT_MISTAKES_LEFT])
-                updated_mistakes_remaining = mistakes_remaining - 1
-                if updated_mistakes_remaining == 0:
-                    status_update = "Unfortunate, {0}. You ran out of mistakes. Here's the verse:\n{1}".format(
-                        player_mention, puzzle_solution)
-                    await ChannelInteractor.send_message(context, StringHelper.handle_discord_formatting(status_update))
-                    self.players.__delitem__(player)
-                    return
-                self.players[player][HANGMAN_DICT_MISTAKES_LEFT] = updated_mistakes_remaining
+                await self.update_mistakes(context, player, player_mention, puzzle_solution)
 
-            self.players[player][HANGMAN_DICT_GUESSES] = "{0}{1}".format(previous_guesses, guess)
+            self.players[player][HANGMAN_DICT_GUESSES].append(guess)
             current_progress = self.players[player][HANGMAN_DICT_PROGRESS]
             if puzzle_solution == current_progress:
-                status_update = "Congrats, {0}! You finished the verse!\n{1}".format(player_mention, puzzle_solution)
-                self.players.__delitem__(player)
-                await ChannelInteractor.send_message(context, StringHelper.handle_discord_formatting(status_update))
+                await self.on_solved(context, player, player_mention, puzzle_solution)
             else:
-                remaining_mistakes = self.players[player][HANGMAN_DICT_MISTAKES_LEFT]
-                remaining_letters = StringHelper.get_remaining_letters(self.players[player][HANGMAN_DICT_GUESSES])
-                status_update = "{0} - Progress:\n{1}\n\nRemaining Mistakes: {2}\n\nRemaining Letters: {3}".format(
-                    player_mention, current_progress, remaining_mistakes, remaining_letters
-                )
-                await ChannelInteractor.send_message(context, StringHelper.handle_discord_formatting(status_update))
+                await self.on_progress(context, player, player_mention, current_progress)
 
-    def update_hangman_puzzle_progress(self, guess: str, player: str) -> str:
+    def update_hangman_puzzle_progress_letter_guess(self, guess: str, player: str) -> str:
         solution_characters = [c for c in self.players[player][HANGMAN_DICT_SOLUTION]]
         progress_characters = [c for c in self.players[player][HANGMAN_DICT_PROGRESS]]
         updated_puzzle = ""
@@ -171,6 +155,50 @@ class Hangman:
                 updated_puzzle = "{0}{1}".format(updated_puzzle, progress_characters[i])
 
         return updated_puzzle
+
+    def update_hangman_puzzle_progress_word_guess(self, guess: str, player: str) -> str:
+        guess_len = len(guess)
+        solution: str = self.players[player][HANGMAN_DICT_SOLUTION]
+        guess_start_index = solution.lower().find(guess)
+        updated_puzzle: str = self.players[player][HANGMAN_DICT_PROGRESS]
+        full_word_accuracy = False
+
+        while guess_start_index != -1:
+            guess_end_index = guess_start_index + guess_len
+            if solution[guess_end_index] not in StringHelper.ENGLISH_ALPHABET:
+                updated_puzzle = "{0}{1}{2}".format(
+                    updated_puzzle[:guess_start_index], solution[guess_start_index:guess_end_index], updated_puzzle[guess_end_index:]
+                )
+                full_word_accuracy = True
+            guess_start_index = solution.lower().find(guess, (guess_end_index + 1))
+
+        if full_word_accuracy:
+            return updated_puzzle
+        else:
+            return "false"
+
+    async def update_mistakes(self, context: Context, player: str, player_mention: str, puzzle_solution: str):
+        mistakes_remaining = int(self.players[player][HANGMAN_DICT_MISTAKES_LEFT])
+        updated_mistakes_remaining = mistakes_remaining - 1
+        if updated_mistakes_remaining == 0:
+            status_update = "Unfortunate, {0}. You ran out of mistakes. Here's the verse:\n{1}".format(player_mention, puzzle_solution)
+            await ChannelInteractor.send_message(context, StringHelper.handle_discord_formatting(status_update))
+            self.players.__delitem__(player)
+            return
+        self.players[player][HANGMAN_DICT_MISTAKES_LEFT] = updated_mistakes_remaining
+
+    async def on_progress(self, context: Context, player: str, player_mention: str, current_progress: str):
+        remaining_mistakes = self.players[player][HANGMAN_DICT_MISTAKES_LEFT]
+        remaining_letters = StringHelper.get_remaining_letters(self.players[player][HANGMAN_DICT_GUESSES])
+        status_update = "{0} - Progress:\n{1}\n\nRemaining Mistakes: {2}\n\nRemaining Letters: {3}".format(
+            player_mention, current_progress, remaining_mistakes, remaining_letters
+        )
+        await ChannelInteractor.send_message(context, StringHelper.handle_discord_formatting(status_update))
+
+    async def on_solved(self, context: Context, player: str, player_mention: str, puzzle_solution: str):
+        status_update = "Congrats, {0}! You finished the verse!\n{1}".format(player_mention, puzzle_solution)
+        self.players.__delitem__(player)
+        await ChannelInteractor.send_message(context, StringHelper.handle_discord_formatting(status_update))
 
     ###########
     # Setters #

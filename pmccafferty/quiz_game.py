@@ -5,7 +5,7 @@ from discord.ext.commands.context import Context
 
 import channel_interactor as ChannelInteractor
 import util.string as StringHelper
-import verse_helper as VerseHelper
+import verse_interactor as VerseInteractor
 from util import logger
 
 
@@ -14,8 +14,8 @@ class Quiz:
         self.bot = bot
         self.guild_name = guild_name
         self.excluded_quiz_words = excluded_quiz_words
-        self.game_name = "quiz"
-        self.game_channel_name = "bible-quizzing"
+        self.game_name = ChannelInteractor.GAME_CHANNEL_QUIZ
+        self.game_channel_name = ChannelInteractor.GAME_CHANNEL_QUIZ_DEFAULT_NAME
         self.players = {}
 
     async def start_game(self, context: Context, option: str = None, book: str = None):
@@ -30,14 +30,12 @@ class Quiz:
         player = str(context.author)
         username = player.split("#")[0]
         if option is None:
-            await ChannelInteractor.send_message(context,
-                                                 "{0} provided no option. Choosing a random one.".format(username))
+            await ChannelInteractor.send_message(context, "{0} provided no option. Choosing a random one.".format(username))
             options = ["ref", "word", "sentence"]
             option = options[random.randint(0, 2)]
-            await ChannelInteractor.send_message(context,
-                                                 "{0} your quizzing option is on: {1}".format(username, option))
+            await ChannelInteractor.send_message(context, "{0} your quizzing option is on: {1}".format(username, option))
 
-        random_verse = VerseHelper.get_random_verse(book)
+        random_verse = VerseInteractor.get_random_verse(book)
         if random_verse == StringHelper.RETURN_ERROR:
             await ChannelInteractor.send_message(context, "{0} that book does not exist.".format(username))
             return
