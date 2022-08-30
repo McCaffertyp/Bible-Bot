@@ -25,8 +25,8 @@ load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD_EBC = os.getenv("DISCORD_EBC_GUILD")
 GUILD_SQUEEZE = os.getenv("DISCORD_SQUEEZE_GUILD")
-GUILD = GUILD_SQUEEZE
-# GUILD = GUILD_EBC
+# GUILD = GUILD_SQUEEZE
+GUILD = GUILD_EBC
 
 intents = discord.Intents().all()
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("$"), intents=intents)
