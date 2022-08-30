@@ -12,6 +12,7 @@ from util import logger
 HANGMAN_DICT_SOLUTION = "solution"
 HANGMAN_DICT_PROGRESS = "progress"
 HANGMAN_DICT_MISTAKES_LEFT = "mistakes"
+HANGMAN_DICT_GUESSABLES = "guessables"
 HANGMAN_DICT_GUESSES = "guesses"
 HANGMAN_PREFILL_LEVEL_NONE = "none"
 HANGMAN_PREFILL_LEVEL_LOW = "low"
@@ -54,7 +55,7 @@ class Hangman:
 
             if option == "status":
                 if player not in self.players:
-                    await ChannelInteractor.send_message(context, "{0} you have no ongoing games! Start one with: $hangman [difficulty]".format(player_mention))
+                    await ChannelInteractor.send_message(context, "{0} you have no ongoing games! Start one with: $hangman [difficulty] (prefill)".format(player_mention))
                     return
                 else:
                     current_progress = self.players[player][HANGMAN_DICT_PROGRESS]
@@ -66,7 +67,7 @@ class Hangman:
 
             if option == "quit":
                 if player not in self.players:
-                    await ChannelInteractor.send_message(context, "{0} you have no ongoing games! Start one with: $hangman [difficulty]".format(player_mention))
+                    await ChannelInteractor.send_message(context, "{0} you have no ongoing games! Start one with: $hangman [difficulty] (prefill)".format(player_mention))
                     return
                 else:
                     puzzle_solution = self.players[player][HANGMAN_DICT_SOLUTION]
@@ -85,12 +86,13 @@ class Hangman:
             verse_reference_end = random_verse.find(" ESV")
             verse_reference = random_verse[verse_reference_start:verse_reference_end]
 
-            puzzle_answer = "\"{0}\" - {1}".format(verse_text, verse_reference)
-            puzzle_progress = create_hangman_puzzle(puzzle_answer, prefill_level)
+            puzzle_solution = "\"{0}\" - {1}".format(verse_text, verse_reference)
+            puzzle_progress = create_hangman_puzzle(puzzle_solution, prefill_level)
 
             self.players[player] = dict()
-            self.players[player][HANGMAN_DICT_SOLUTION] = puzzle_answer
+            self.players[player][HANGMAN_DICT_SOLUTION] = puzzle_solution
             self.players[player][HANGMAN_DICT_PROGRESS] = puzzle_progress
+            self.players[player][HANGMAN_DICT_GUESSABLES] = populate_guessables(puzzle_solution, puzzle_progress)
             self.players[player][HANGMAN_DICT_GUESSES] = []
             if option == "easy":
                 self.players[player][HANGMAN_DICT_MISTAKES_LEFT] = 10
@@ -113,7 +115,7 @@ class Hangman:
             player = str(context.author)
             player_mention = context.author.mention
             if player not in self.players:
-                await ChannelInteractor.send_message(context, "{0} you have no ongoing games! Start one with: $hangman [difficulty]".format(player_mention))
+                await ChannelInteractor.send_message(context, "{0} you have no ongoing games! Start one with: $hangman [difficulty] (prefill)".format(player_mention))
                 return
 
             guess = guess.lower()
@@ -123,16 +125,20 @@ class Hangman:
                 return
 
             puzzle_solution = self.players[player][HANGMAN_DICT_SOLUTION]
-            if guess in puzzle_solution.lower():
+            guessables: list = self.players[player][HANGMAN_DICT_GUESSABLES]
+            if guess in guessables:
                 if len(guess) == 1:
                     updated_progress = self.update_hangman_puzzle_progress_letter_guess(guess, player)
                     self.players[player][HANGMAN_DICT_PROGRESS] = updated_progress
+                    self.players[player][HANGMAN_DICT_GUESSABLES].remove(guess)
                 else:
                     updated_progress = self.update_hangman_puzzle_progress_word_guess(guess, player)
                     if updated_progress == "false":
                         await self.update_mistakes(context, player, player_mention, puzzle_solution)
                     else:
                         self.players[player][HANGMAN_DICT_PROGRESS] = updated_progress
+                        self.players[player][HANGMAN_DICT_GUESSABLES].remove(guess)
+                        self.update_guessables(player, puzzle_solution, updated_progress)
             else:
                 await self.update_mistakes(context, player, player_mention, puzzle_solution)
 
@@ -176,6 +182,15 @@ class Hangman:
             return updated_puzzle
         else:
             return "false"
+
+    def update_guessables(self, player, puzzle_solution: str, puzzle_progress: str):
+        guessables = self.players[player][HANGMAN_DICT_GUESSABLES]
+        guessable_letters = get_guessable_letters(puzzle_solution, puzzle_progress)
+        for i in range(0, len(guessables)):
+            if len(guessables[i]) == 1 and len(guessables[i + 1]) == 1:
+                guessables = guessables[0:i]
+                break
+        self.players[player][HANGMAN_DICT_GUESSABLES] = guessables + guessable_letters
 
     async def update_mistakes(self, context: Context, player: str, player_mention: str, puzzle_solution: str):
         mistakes_remaining = int(self.players[player][HANGMAN_DICT_MISTAKES_LEFT])
@@ -256,3 +271,19 @@ def section_hangman_puzzle(words_in_verse: list) -> list:
         sub_section = words_in_verse[i:(i + sub_section_size)]
         sections.append(sub_section)
     return sections
+
+
+def populate_guessables(puzzle_solution: str, puzzle_progress: str) -> list:
+    guessables = StringHelper.get_only_words(puzzle_solution.split())
+    guessable_letters = get_guessable_letters(puzzle_solution, puzzle_progress)
+    return guessables + guessable_letters
+
+
+def get_guessable_letters(puzzle_solution: str, puzzle_progress: str) -> list:
+    guessable_letters = []
+    for i in range(0, len(puzzle_solution)):
+        psc = puzzle_solution[i].lower()
+        ppc = puzzle_progress[i].lower()
+        if psc in StringHelper.ENGLISH_ALPHABET and psc not in guessable_letters and ppc == "_":
+            guessable_letters.append(psc)
+    return guessable_letters
