@@ -12,8 +12,8 @@ from util import logger
 #############
 GAME_CHANNEL_QUIZ = "quiz"
 GAME_CHANNEL_HANGMAN = "hangman"
-GAME_CHANNEL_QUIZ_DEFAULT_NAME = "bible-quizzing"
-GAME_CHANNEL_HANGMAN_DEFAULT_NAME = "bible-hangman"
+GAME_CHANNEL_QUIZ_DEFAULT_NAME = "bible-quiz-game"
+GAME_CHANNEL_HANGMAN_DEFAULT_NAME = "bible-hangman-game"
 
 
 ##################

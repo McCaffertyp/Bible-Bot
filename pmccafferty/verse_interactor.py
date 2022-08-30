@@ -19,7 +19,7 @@ BIBLE_DICT_TOTAL_VERSES = "Total Verses"
 BIBLE_DICT_AVG_VERSES = "Average Verses"
 VOTD_BASE_URL = "https://dailyverses.net/"
 VERSE_LOOKUP_BASE_URL = "https://www.openbible.info/labs/cross-references/search?q="
-KEYWORD_SEARCH_BASE_URL = "https://www.biblegateway.com/quicksearch/?quicksearch="
+KEYWORDS_BASE_URL = "https://www.biblegateway.com/quicksearch/?quicksearch="
 
 
 async def lookup_verse(context: Context, book: str = None, chapter_verse: str = None, book_num: str = None):
@@ -46,13 +46,13 @@ async def lookup_verse(context: Context, book: str = None, chapter_verse: str = 
             await ChannelInteractor.send_message(context, StringHelper.remove_html_tags(verse_text))
 
 
-async def search_keyword(context: Context, keyword: str = None):
-    if keyword is None:
-        await ChannelInteractor.send_message(context, "Unfortunately nothing popped up for that keyword, since no keyword was entered.")
+async def search_keywords(context: Context, keywords: str = None):
+    if keywords is None:
+        await ChannelInteractor.send_message(context, "Unfortunately nothing popped up for that, since nothing was entered.")
     else:
-        verse_text = get_verse_from_keyword_url(keyword)
+        verse_text = get_verse_from_search_url(keywords)
         if verse_text == "error":
-            await ChannelInteractor.send_message(context, "Keyword \"{0}\" has 0 good matches.".format(keyword))
+            await ChannelInteractor.send_message(context, "Keywords \"{0}\" has 0 good matches.".format(keywords))
         else:
             await ChannelInteractor.send_message(context, StringHelper.remove_html_tags(verse_text))
 
@@ -115,8 +115,12 @@ def get_verse_from_lookup_url(book: str, chapter_verse: str, book_num: str = Non
     return "\"{0}\" - {1} ESV".format(verse_text, reference)
 
 
-def get_verse_from_keyword_url(word) -> str:
-    lookup_url = "{0}{1}&version=ESV".format(KEYWORD_SEARCH_BASE_URL, word)
+def get_verse_from_search_url(query: str) -> str:
+    query_words = StringHelper.get_only_words(query.split())
+    search_text = query_words[0]
+    for i in range(1, len(query_words)):
+        search_text = "{0}+{1}".format(search_text, query_words[i])
+    lookup_url = "{0}{1}&version=ESV".format(KEYWORDS_BASE_URL, search_text)
     webpage: http.client.HTTPResponse = urlopen(lookup_url)
     html_bytes: bytes = webpage.read()
     html: str = html_helper.unescape(html_bytes.decode("utf-8"))

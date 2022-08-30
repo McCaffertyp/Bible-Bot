@@ -3,7 +3,7 @@
 Created on Wed Aug 24 04:35:00 2022
 
 @author: Paul McCafferty
-@version: 7.41
+@version: 8.43
 """
 import operator
 import os
@@ -25,8 +25,8 @@ load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD_EBC = os.getenv("DISCORD_EBC_GUILD")
 GUILD_SQUEEZE = os.getenv("DISCORD_SQUEEZE_GUILD")
-# GUILD = GUILD_SQUEEZE
-GUILD = GUILD_EBC
+GUILD = GUILD_SQUEEZE
+# GUILD = GUILD_EBC
 
 intents = discord.Intents().all()
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("$"), intents=intents)
@@ -72,21 +72,21 @@ async def on_message(message):
     brief="Provides help on all the commands available."
 )
 async def print_help(context: Context):
-    header_text = "Helpful Key: Words in straight brackets [] are required, words in parenthesis () are optional."
+    header_text = "Help Format Explanation: Words in straight brackets [] are required, words in parenthesis () are optional."
     h_help_text = "$h\nProvides help on all the commands available by printing out the descriptions for each."
-    setup_help_text = "$setup (quiz/hangman) (channel-name)\nUse this command with the game you want to setup and which channel to link it to. Is provided with default values of \"bible-quizzing\" and \"bible-hangman\"."
+    setup_help_text = "$setup (quiz/hangman) (channel-name)\nUse this command with the game you want to setup and which channel to link it to. Is provided with default values of \"bible-quiz-game\" and \"bible-hangman-game\"."
     dailyvotd_help_text = "$dailyvotd [time]\nPrints the Verse of the Day every day at a consistent time. Using again while active turns it off."
     votd_help_text = "$votd\nPrints the Verse of the Day that was fetched from online."
     lookup_help_text = "$lookup [book] [chapter:verse] (book_num)\nLooks up and prints out the verse that was searched."
     rlookup_help_text = "$rlookup\nLooks up and prints out a random verse."
-    keyword_help_text = "$keyword [word]\nTakes in a singular keyword and searches online for the top related verse to print out as a response."
+    keywords_help_text = "$keywords [word]\nTakes in any amount of words and searches online for the top related verse to print out as a response."
     quiz_help_text = "$quiz [ref/word/sentence (book)\nSends a random verse with either the reference, a single word, or a sentence missing for the user to solve."
     hangman_help_text = "$hangman [easy/medium/hard/status/quit] (none/low/medium/high)\nUsing hangman starts a game. Three modes, status and quit are the accepted arguments. Change prefill with secondary option."
     hguess_help_text = "$hguess [guess]\nUsed to submit a guess to an ongoing hangman puzzle for the message sender."
     math_help_text = "$math [number_a] [operator] [number_b]\nProvided two numbers and a method of operation, the bot will produce the result. Supported operators: +, -, *, /, ^"
     help_text = "```{0}\n\n{1}\n\n{2}\n\n{3}\n\n{4}\n\n{5}\n\n{6}\n\n{7}\n\n{8}\n\n{9}\n\n{10}\n\n{11}```".format(
         header_text, h_help_text, setup_help_text, dailyvotd_help_text, votd_help_text,
-        lookup_help_text, rlookup_help_text, keyword_help_text, quiz_help_text,
+        lookup_help_text, rlookup_help_text, keywords_help_text, quiz_help_text,
         hangman_help_text, hguess_help_text, math_help_text
     )
     await ChannelInteractor.send_message(context, help_text)
@@ -177,12 +177,12 @@ async def verse_lookup_random(context: Context):
 
 
 @bot.command(
-    name="keyword",
-    help="Takes in a singular keyword and searches online for the top related verse to print out as a response.",
-    brief="Single keyword option to search online."
+    name="keywords",
+    help="Takes in any amount of words and searches online for the top related verse to print out as a response.",
+    brief="Search online for entered text."
 )
-async def search_keyword(context: Context, keyword: str = None):
-    await VerseInteractor.search_keyword(context, keyword)
+async def search_keywords(context: Context, *, keyword: str = None):
+    await VerseInteractor.search_keywords(context, keyword)
 
 
 @bot.command(
