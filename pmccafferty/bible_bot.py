@@ -3,10 +3,11 @@
 Created on Wed Aug 24 04:35:00 2022
 
 @author: Paul McCafferty
-@version: 8.43
+@version: 8.44
 """
 import operator
 import os
+import sys
 
 import discord
 from discord.ext import commands
@@ -23,10 +24,20 @@ from util import logger
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
-GUILD_EBC = os.getenv("DISCORD_EBC_GUILD")
-GUILD_SQUEEZE = os.getenv("DISCORD_SQUEEZE_GUILD")
-# GUILD = GUILD_SQUEEZE
-GUILD = GUILD_EBC
+INVALID_GUILD_ERROR_CODE = 600
+
+try:
+    args = sys.argv[1:]
+    GUILD = args[0]
+    for i in range(1, len(args)):
+        GUILD = "{0} {1}".format(GUILD, args[i])
+    logger.d("Attempting bot login to guild={0}".format(GUILD))
+except Exception as error:
+    GUILD = ""
+    logger.e("Was unable to launch the bot. More information printed below.")
+    logger.e(error)
+    logger.d("Exiting with code {0}".format(INVALID_GUILD_ERROR_CODE))
+    exit(INVALID_GUILD_ERROR_CODE)
 
 intents = discord.Intents().all()
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("$"), intents=intents)
