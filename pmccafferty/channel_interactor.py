@@ -108,7 +108,10 @@ def update_message_log(guild_name: str, message: Message):
     try:
         with open(file_path, "a") as messageLogs:
             try:
-                line_log = "{0}/{1}/{2}: {3}\n".format(get_current_datetime(), message.channel, message.author, message.content)
+                author = message.author
+                if message.author == "𝕁𝕒𝕧𝕒":
+                    author = "Java"
+                line_log = "{0}/{1}/{2}: {3}\n".format(get_current_datetime(), message.channel, author, message.content)
                 messageLogs.write(line_log)
                 messageLogs.close()
             except UnicodeEncodeError as error:
