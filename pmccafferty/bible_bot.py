@@ -3,7 +3,7 @@
 Created on Wed Aug 24 04:35:00 2022
 
 @author: Paul McCafferty
-@version: 10.46
+@version: 10.47
 """
 import asyncio
 import operator
@@ -259,6 +259,7 @@ async def do_math(context: Context, num_one: float = None, op: str = None, num_t
     help="Puts all channels in slowmode for a specified period of time. Only the options which Discord allow are acceptable.",
     brief="Puts all channels in slowmode."
 )
+@commands.has_role("Mod")
 async def take_nap(context: Context, time_count: int = 1, time_unit: str = "hour"):
     # Technically although I only want to use those values in DISCORD_SUPPORTED_TIMES, they accept any seconds value from 1-21600
     global server_napping
