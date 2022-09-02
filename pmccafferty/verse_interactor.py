@@ -59,6 +59,7 @@ async def search_keywords(context: Context, keywords: str = None):
 
 def get_votd_from_url() -> str:
     lookup_url = "{0}{1}".format(VOTD_BASE_URL, "esv")
+    logger.d("VOTD lookup_url={0}".format(lookup_url))
     webpage: http.client.HTTPResponse = urlopen(lookup_url)
     html_bytes: bytes = webpage.read()
     html: str = html_helper.unescape(html_bytes.decode("utf-8"))
