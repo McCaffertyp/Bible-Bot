@@ -2,7 +2,9 @@
 # Constants #
 #############
 RETURN_ERROR = "error"
+NUMBERS_STRING = "0123456789"
 ENGLISH_ALPHABET = "abcdefghijklmnopqrstuvwxyz"
+SPECIAL_CHARACTERS = "`~!@#$%^&*()-_=+[{]}\\|;:'\",<.>/?"
 
 
 def convert_twenty_four_to_twelve(time: str) -> str:
@@ -92,3 +94,11 @@ def replace_characters(s: str, c: str, r: str) -> str:
     for i in range(0, len(c), len(r)):
         full_replace_string = "{0}\\{1}".format(full_replace_string, r)
     return s.replace(c, full_replace_string)
+
+
+def remove_emojis(s: str) -> str:
+    sentence = ""
+    for c in s:
+        if c.lower() in ENGLISH_ALPHABET or c in SPECIAL_CHARACTERS or c in NUMBERS_STRING or c == " ":
+            sentence = "{0}{1}".format(sentence, c)
+    return sentence

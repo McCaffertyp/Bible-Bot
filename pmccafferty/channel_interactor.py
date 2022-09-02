@@ -116,7 +116,7 @@ def update_message_log(guild_name: str, message: Message):
                 logger.d("Attempting to write message without non-possible encode characters")
                 emoji_replacement_start_index = (line_log.find(":", line_log.find("#")) + 2)
                 emoji_replacement_string = line_log[emoji_replacement_start_index:]
-                cleaned_line_log = line_log.replace(emoji_replacement_string, StringHelper.remove_non_alphabet(emoji_replacement_string))
+                cleaned_line_log = line_log.replace(emoji_replacement_string, StringHelper.remove_emojis(emoji_replacement_string))
                 messageLogs.write("{0}\n".format(cleaned_line_log))
     except FileNotFoundError as error:
         logger.e(error)
