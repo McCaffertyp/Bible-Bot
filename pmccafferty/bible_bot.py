@@ -3,7 +3,7 @@
 Created on Wed Aug 24 04:35:00 2022
 
 @author: Paul McCafferty
-@version: 8.44
+@version: 9.44
 """
 import operator
 import os
@@ -39,6 +39,8 @@ except Exception as error:
     logger.d("Exiting with code {0}".format(INVALID_GUILD_ERROR_CODE))
     exit(INVALID_GUILD_ERROR_CODE)
 
+# GUILD = "Squeeze"
+
 intents = discord.Intents().all()
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("$"), intents=intents)
 
@@ -57,6 +59,7 @@ hangman = Hangman(bot, GUILD)
 ##############
 @bot.event
 async def on_ready():
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="$h | $[command]"))
     logger.i('Successfully logged into {0} as {1}'.format(GUILD, bot.user))
 
 
@@ -66,6 +69,7 @@ async def on_message(message):
         return
 
     if message.guild.name == GUILD:
+        ChannelInteractor.update_message_log(GUILD, message)
         await ChannelInteractor.filter_message(message, swear_words)
         await bot.process_commands(message)
         if str(message.author) in quiz.players:

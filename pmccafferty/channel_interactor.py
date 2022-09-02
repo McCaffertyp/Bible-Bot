@@ -1,11 +1,14 @@
 from enum import Enum
+from pathlib import Path
 
 import discord
 from discord.ext.commands import Bot
+from discord.message import Message
 from discord.ext.commands.context import Context
 
 import util.string as StringHelper
 from util import logger
+from util.time import get_current_datetime
 
 #############
 # Constants #
@@ -98,3 +101,26 @@ def ensure_valid_channel_name(channelType: ChannelType, channel_name: str) -> st
     elif channelType == ChannelType.VOICE:
         channel_name = channel_name
     return channel_name
+
+
+def update_message_log(guild_name: str, message: Message):
+    file_path = "G:\\Discord\\{0}\\messageLogs\\log.txt".format(guild_name)
+    try:
+        with open(file_path, "a") as messageLogs:
+            line_log = "{0}/{1}: {2}\n".format(get_current_datetime(), message.author, message.content)
+            messageLogs.write(line_log)
+            messageLogs.close()
+    except FileNotFoundError as error:
+        logger.e(error)
+        logger.w("Was unable to find file with path={0}".format(file_path))
+        logger.d("Creating new messageLog file at {0}".format(file_path))
+        try:
+            Path(file_path.replace("log.txt", "")).mkdir(parents=True, exist_ok=False)
+        except FileExistsError as error:
+            logger.e(error)
+            logger.d("Directory path existed, but file did not")
+        finally:
+            with open(file_path, "a+") as messageLogs:
+                line_log = "{0}/{1}: {2}".format(get_current_datetime(), message.author, message.content)
+                messageLogs.write(line_log)
+                messageLogs.close()
