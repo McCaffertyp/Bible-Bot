@@ -3,19 +3,22 @@
 Created on Wed Aug 24 04:35:00 2022
 
 @author: Paul McCafferty
-@version: 9.46
+@version: 10.46
 """
+import asyncio
 import operator
 import os
 import sys
 
 import discord
+from discord.channel import TextChannel
 from discord.ext import commands
 from discord.ext.commands.context import Context
 from dotenv import load_dotenv
 
 import channel_interactor as ChannelInteractor
 import util.string as StringHelper
+import util.time as TimeHelper
 import verse_interactor as VerseInteractor
 from channel_interactor import ChannelType
 from hangman_game import Hangman, HANGMAN_PREFILL_LEVEL_NONE
@@ -25,21 +28,25 @@ from util import logger
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 INVALID_GUILD_ERROR_CODE = 600
+# Supported times: 5s, 10s, 15s, 30s, 1m, 2m, 5m, 10m, 15m, 30m, 1h, 2h, 6h
+DISCORD_SUPPORTED_TIMES = ["5s", "10s", "15s", "30s", "1m", "2m", "5m", "10m", "15m", "30m", "1h", "2h", "6h"]
+RUNNING_DEBUGGER = False
 
-try:
-    args = sys.argv[1:]
-    GUILD = args[0]
-    for i in range(1, len(args)):
-        GUILD = "{0} {1}".format(GUILD, args[i])
-    logger.d("Attempting bot login to guild={0}".format(GUILD))
-except Exception as error:
-    GUILD = ""
-    logger.e("Was unable to launch the bot. More information printed below.")
-    logger.e(error)
-    logger.d("Exiting with code {0}".format(INVALID_GUILD_ERROR_CODE))
-    exit(INVALID_GUILD_ERROR_CODE)
-
-# GUILD = "Squeeze"
+if not RUNNING_DEBUGGER:
+    try:
+        args = sys.argv[1:]
+        GUILD = args[0]
+        for i in range(1, len(args)):
+            GUILD = "{0} {1}".format(GUILD, args[i])
+        logger.d("Attempting bot login to guild={0}".format(GUILD))
+    except Exception as error:
+        GUILD = ""
+        logger.e("Was unable to launch the bot. More information printed below.")
+        logger.e(error)
+        logger.d("Exiting with code {0}".format(INVALID_GUILD_ERROR_CODE))
+        exit(INVALID_GUILD_ERROR_CODE)
+else:
+    GUILD = "Squeeze"
 
 intents = discord.Intents().all()
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("$"), intents=intents)
@@ -52,6 +59,8 @@ operators = {"+": operator.add, "-": operator.sub, "*": operator.mul, "/": opera
 excluded_quiz_words = [line.split("\n")[0] for line in open("data/excluded_quiz_words.txt", "r").readlines()]
 quiz = Quiz(bot, GUILD, excluded_quiz_words)
 hangman = Hangman(bot, GUILD)
+server_napping = False
+time_remaining = 0
 
 
 ##############
@@ -99,10 +108,15 @@ async def print_help(context: Context):
     hangman_help_text = "$hangman [easy/medium/hard/status/quit] (none/low/medium/high)\nUsing hangman starts a game. Three modes, status and quit are the accepted arguments. Change prefill with secondary option."
     hguess_help_text = "$hguess [guess]\nUsed to submit a guess to an ongoing hangman puzzle for the message sender."
     math_help_text = "$math [number_a] [operator] [number_b]\nProvided two numbers and a method of operation, the bot will produce the result. Supported operators: +, -, *, /, ^"
-    help_text = "```{0}\n\n{1}\n\n{2}\n\n{3}\n\n{4}\n\n{5}\n\n{6}\n\n{7}\n\n{8}\n\n{9}\n\n{10}\n\n{11}```".format(
+    naptime_help_text = "$naptime (number) (seconds/minutes/hours)\nPuts all channels in slowmode for a specified period of time. Only the options which Discord allow are acceptable." \
+                        "\nSupported times: 5s, 10s, 15s, 30s, 1m, 2m, 5m, 10m, 15m, 30m, 1h, 2h, 6h"
+    napcheck_help_text = "$napcheck\nPrints out the time remaining for the nap."
+    napend_help_text = "$napend\nEnds the current server nap."
+    help_text = "```{0}\n\n{1}\n\n{2}\n\n{3}\n\n{4}\n\n{5}\n\n{6}\n\n{7}\n\n{8}\n\n{9}\n\n{10}\n\n{11}\n\n{12}\n\n{13}\n\n{14}```".format(
         header_text, h_help_text, setup_help_text, dailyvotd_help_text, votd_help_text,
         lookup_help_text, rlookup_help_text, keywords_help_text, quiz_help_text,
-        hangman_help_text, hguess_help_text, math_help_text
+        hangman_help_text, hguess_help_text, math_help_text, naptime_help_text,
+        napcheck_help_text, napend_help_text
     )
     await ChannelInteractor.send_message(context, help_text)
 
@@ -238,6 +252,75 @@ async def do_math(context: Context, num_one: float = None, op: str = None, num_t
     else:
         answer = operators[op](num_one, num_two)
         await ChannelInteractor.send_message(context, "Answer: {0}".format(answer))
+
+
+@bot.command(
+    name="naptime",
+    help="Puts all channels in slowmode for a specified period of time. Only the options which Discord allow are acceptable.",
+    brief="Puts all channels in slowmode."
+)
+async def take_nap(context: Context, time_count: int = 1, time_unit: str = "hour"):
+    # Technically although I only want to use those values in DISCORD_SUPPORTED_TIMES, they accept any seconds value from 1-21600
+    global server_napping
+    global time_remaining
+    if server_napping:
+        await ChannelInteractor.send_message(context, "Server is already taking a nap! ")
+        return
+
+    time_unit = time_unit[0]
+    if "{0}{1}".format(str(time_count), time_unit) not in DISCORD_SUPPORTED_TIMES:
+        await ChannelInteractor.send_message(context, "Time entered is unsupported by Discord.")
+        return
+
+    logger.d("Setting all channels to slowmode for {0}{1}. Initiated by {2}".format(time_count, time_unit, context.author))
+    await ChannelInteractor.send_message(context, "Setting all channels to slowmode for {0}{1}".format(time_count, time_unit))
+    server_napping = True
+
+    discord_time_ms = TimeHelper.convert_discord_time_to_ms(time_count, time_unit)
+    for guild in bot.guilds:
+        if guild.name == GUILD:
+            for text_channel in guild.text_channels:
+                channel: TextChannel = text_channel
+                await channel.edit(slowmode_delay=(discord_time_ms / 1000))
+
+    time_remaining = discord_time_ms
+    while time_remaining > 0 and server_napping:
+        await asyncio.sleep(0.9)
+        time_remaining -= 1000
+
+    server_napping = False
+
+    for guild in bot.guilds:
+        if guild.name == GUILD:
+            for text_channel in guild.text_channels:
+                channel: TextChannel = text_channel
+                await channel.edit(slowmode_delay=0)
+
+
+@bot.command(
+    name="napcheck",
+    help="Prints out the time remaining for the nap.",
+    brief="Returns how much nap time remains."
+)
+async def get_remaining_nap_time(context: Context):
+    if not server_napping:
+        await ChannelInteractor.send_message(context, "Server isn't taking a nap currently.")
+    else:
+        logger.d(time_remaining)
+        str_time_remaining = TimeHelper.convert_ms_to_time(time_remaining)
+        logger.d(str_time_remaining)
+        await ChannelInteractor.send_message(context, "Remaining time of nap: {0}".format(str_time_remaining))
+
+
+@bot.command(
+    name="napend",
+    help="Ends the current server nap.",
+    brief="End current nap."
+)
+async def end_server_nap(context: Context):
+    global server_napping
+    server_napping = False
+    logger.d("Server nap was ended by {0}".format(context.author))
 
 
 ####################
