@@ -39,7 +39,7 @@ class Quiz:
             return
 
         player = str(context.author)
-        username = StringHelper.remove_non_alphabet(player.split("#")[0])
+        username = StringHelper.make_valid_firebase_name(player.split("#")[0])
         if option is None:
             await ChannelInteractor.send_message(context, "{0} provided no option. Choosing a random one.".format(username))
             options = ["ref", "word", "sentence"]
