@@ -13,7 +13,8 @@ from firebase_interactor import FirebaseInteractor
 #############
 # Constants #
 #############
-FIREBASE_STREAK_REF = "bestStreak"
+FIREBASE_BEST_STREAK_REF = "bestStreak"
+FIREBASE_CURRENT_STREAK_REF = "currentStreak"
 FIREBASE_RATING_REF = "rating"
 DEFAULT_POINTS = 100
 
@@ -74,9 +75,11 @@ class Quiz:
         user_database_path = "{0}/{1}".format(self.game_name, username)
         if not self.firebase_interactor.check_node_exists(user_database_path):
             rating_path = "{0}/{1}".format(user_database_path, FIREBASE_RATING_REF)
-            streak_path = "{0}/{1}".format(user_database_path, FIREBASE_STREAK_REF)
+            best_streak_path = "{0}/{1}".format(user_database_path, FIREBASE_BEST_STREAK_REF)
+            current_streak_path = "{0}/{1}".format(user_database_path, FIREBASE_CURRENT_STREAK_REF)
             self.firebase_interactor.write_to_node(rating_path, DEFAULT_POINTS)
-            self.firebase_interactor.write_to_node(streak_path, 0)
+            self.firebase_interactor.write_to_node(best_streak_path, 0)
+            self.firebase_interactor.write_to_node(current_streak_path, 0)
         await ChannelInteractor.send_message(context, "{0}, your quiz is:\n{1}".format(context.author.mention, quiz_verse))
 
     def option_ref(self, player: str, random_verse: str, verse_reference: str) -> str:
@@ -114,18 +117,21 @@ class Quiz:
     async def option_rating_streak(self, context: Context, option: str, username: str):
         user_database_path = "{0}/{1}".format(self.game_name, username)
         rating_path = "{0}/{1}".format(user_database_path, FIREBASE_RATING_REF)
-        streak_path = "{0}/{1}".format(user_database_path, FIREBASE_STREAK_REF)
+        best_streak_path = "{0}/{1}".format(user_database_path, FIREBASE_BEST_STREAK_REF)
+        current_streak_path = "{0}/{1}".format(user_database_path, FIREBASE_CURRENT_STREAK_REF)
         if not self.firebase_interactor.check_node_exists(user_database_path):
             await ChannelInteractor.send_message(context, "{0} you aren't currently in the system.\nSetting up your profile...".format(context.author.mention))
             self.firebase_interactor.write_to_node(rating_path, DEFAULT_POINTS)
-            self.firebase_interactor.write_to_node(streak_path, 0)
+            self.firebase_interactor.write_to_node(best_streak_path, 0)
+            self.firebase_interactor.write_to_node(current_streak_path, 0)
+            await ChannelInteractor.send_message(context, "{0} you are now in the database. Have fun playing!")
         else:
             if option == "rating":
                 current_rating = self.firebase_interactor.read_from_node(rating_path)
-                await ChannelInteractor.send_message(context, "{0} your rating is currently: {1}".format(context.author.mention, current_rating))
+                await ChannelInteractor.send_message(context, "{0} your rating is currently {1}".format(context.author.mention, current_rating))
             else:
-                current_streak = self.firebase_interactor.read_from_node(streak_path)
-                await ChannelInteractor.send_message(context, "{0} your streak is currently: {1}".format(context.author.mention, current_streak))
+                best_streak = self.firebase_interactor.read_from_node(best_streak_path)
+                await ChannelInteractor.send_message(context, "{0} your best streak is {1}".format(context.author.mention, best_streak))
 
     async def check_answer(self, message, answer: str):
         if "$quiz" in message.content:
@@ -133,9 +139,11 @@ class Quiz:
         player = str(message.author)
         username = StringHelper.make_valid_firebase_name(player.split("#")[0])
         user_rating_path = "{0}/{1}/{2}".format(self.game_name, username, FIREBASE_RATING_REF)
-        user_streak_path = "{0}/{1}/{2}".format(self.game_name, username, FIREBASE_STREAK_REF)
+        user_best_streak_path = "{0}/{1}/{2}".format(self.game_name, username, FIREBASE_BEST_STREAK_REF)
+        user_current_streak_path = "{0}/{1}/{2}".format(self.game_name, username, FIREBASE_CURRENT_STREAK_REF)
         current_rating = int(self.firebase_interactor.read_from_node(user_rating_path))
-        current_streak = int(self.firebase_interactor.read_from_node(user_streak_path))
+        best_streak = int(self.firebase_interactor.read_from_node(user_best_streak_path))
+        current_streak = int(self.firebase_interactor.read_from_node(user_current_streak_path))
         correct_answer: str = self.players[player]
         if answer.lower() != correct_answer.lower():
             rating_decrement = random.randint(1, 5)
@@ -143,16 +151,18 @@ class Quiz:
             if updated_rating < 0:
                 updated_rating = 0
             self.firebase_interactor.write_to_node(user_rating_path, updated_rating)
-            self.firebase_interactor.write_to_node(user_streak_path, 0)
+            self.firebase_interactor.write_to_node(user_current_streak_path, 0)
+            if current_streak > best_streak:
+                self.firebase_interactor.write_to_node(user_best_streak_path, current_streak)
             await ChannelInteractor.send_message(
                 message,
-                "Sorry, {0}, that is incorrect. Was looking for:\n{1}\n\nStreak reset from: {4}"
-                .format(username, correct_answer, current_rating, updated_rating, current_streak)
+                "Sorry, {0}, that is incorrect. Was looking for:\n{1}\n\nStreak reset from: {4}\nBest streak: {5}"
+                .format(username, correct_answer, current_rating, updated_rating, current_streak, best_streak)
             )
         else:
             rating_increment = random.randint(5, 15)
             self.firebase_interactor.write_to_node(user_rating_path, current_rating + rating_increment)
-            self.firebase_interactor.write_to_node(user_streak_path, current_streak + 1)
+            self.firebase_interactor.write_to_node(user_current_streak_path, current_streak + 1)
             await ChannelInteractor.send_message(
                 message,
                 "Congratulations, {0}, that is correct!\nCurrent streak: {1}"
