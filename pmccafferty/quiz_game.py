@@ -146,7 +146,7 @@ class Quiz:
             self.firebase_interactor.write_to_node(user_streak_path, 0)
             await ChannelInteractor.send_message(
                 message,
-                "Sorry, {0}, that is incorrect. Was looking for:\n{1}\n\nRating decreased: {2} -> {3}\nStreak reset from: {4}"
+                "Sorry, {0}, that is incorrect. Was looking for:\n{1}\n\nStreak reset from: {4}"
                 .format(username, correct_answer, current_rating, updated_rating, current_streak)
             )
         else:
@@ -156,7 +156,7 @@ class Quiz:
             self.firebase_interactor.write_to_node(user_streak_path, current_streak + 1)
             await ChannelInteractor.send_message(
                 message,
-                "Congratulations, {0}, that is correct! Rating increased: {1} -> {2}\nCurrent streak: {3}"
+                "Congratulations, {0}, that is correct!\n\nCurrent streak: {3}"
                 .format(username, current_rating, updated_rating, current_streak + 1)
             )
         self.players.__delitem__(player)
