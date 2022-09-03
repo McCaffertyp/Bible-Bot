@@ -111,6 +111,8 @@ def update_message_log(guild_name: str, message: Message):
                 author = str(message.author)
                 if "𝕁𝕒𝕧𝕒" in author:
                     author = author.replace("𝕁𝕒𝕧𝕒", "Java")
+                elif "а" in author:
+                    author = author.replace("а", "a")
                 line_log = "{0}/{1}/{2}: {3}\n".format(get_current_datetime(), message.channel, author, message.content)
                 messageLogs.write(line_log)
                 messageLogs.close()
