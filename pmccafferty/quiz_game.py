@@ -72,14 +72,7 @@ class Quiz:
             await ChannelInteractor.send_message(context, "{0}, that option is unsupported.".format(context.author.mention))
             return
 
-        user_database_path = "{0}/{1}".format(self.game_name, username)
-        if not self.firebase_interactor.check_node_exists(user_database_path):
-            rating_path = "{0}/{1}".format(user_database_path, FIREBASE_RATING_REF)
-            best_streak_path = "{0}/{1}".format(user_database_path, FIREBASE_BEST_STREAK_REF)
-            current_streak_path = "{0}/{1}".format(user_database_path, FIREBASE_CURRENT_STREAK_REF)
-            self.firebase_interactor.write_to_node(rating_path, DEFAULT_POINTS)
-            self.firebase_interactor.write_to_node(best_streak_path, 0)
-            self.firebase_interactor.write_to_node(current_streak_path, 0)
+        self.check_and_create_player_data(username)
         await ChannelInteractor.send_message(context, "{0}, your quiz is:\n{1}".format(context.author.mention, quiz_verse))
 
     def option_ref(self, player: str, random_verse: str, verse_reference: str) -> str:
@@ -169,6 +162,17 @@ class Quiz:
                 .format(username, current_streak + 1)
             )
         self.players.__delitem__(player)
+
+    def check_and_create_player_data(self, username: str):
+        user_rating_path = "{0}/{1}/{2}".format(self.game_name, username, FIREBASE_RATING_REF)
+        user_best_streak_path = "{0}/{1}/{2}".format(self.game_name, username, FIREBASE_BEST_STREAK_REF)
+        user_current_streak_path = "{0}/{1}/{2}".format(self.game_name, username, FIREBASE_CURRENT_STREAK_REF)
+        if not self.firebase_interactor.check_node_exists(user_rating_path):
+            self.firebase_interactor.write_to_node(user_rating_path, DEFAULT_POINTS)
+        if not self.firebase_interactor.check_node_exists(user_best_streak_path):
+            self.firebase_interactor.write_to_node(user_best_streak_path, 0)
+        if not self.firebase_interactor.check_node_exists(user_current_streak_path):
+            self.firebase_interactor.write_to_node(user_current_streak_path, 0)
 
     ###########
     # Setters #
