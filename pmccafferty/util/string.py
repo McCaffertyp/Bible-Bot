@@ -121,26 +121,35 @@ def remove_non_alphabet(s: str) -> str:
 
 
 def replace_characters(s: str, c: str, r: str) -> str:
-    # Replaces characters "c" in string "s" with "r"
+    # Replaces characters c in string s with r
     full_replace_string = ""
     for i in range(0, len(c), len(r)):
         full_replace_string = "{0}\\{1}".format(full_replace_string, r)
     return s.replace(c, "{0}".format(full_replace_string))
 
 
-def replace_words(s: str, c: str, r: str) -> str:
-    # Replaces all words "c" in string "s" with "r"
+def replace_characters_range(s: str, start: int, end: int, r: str) -> str:
+    # Replaces characters s[start:end] with r
+    full_replace_string = ""
+    for i in range(start, end, len(r)):
+        full_replace_string = "{0}\\{1}".format(full_replace_string, r)
+    return "{0}{1}{2}".format(s[:start], full_replace_string, s[end:])
+
+
+def replace_words(s: str, w: str, r: str) -> str:
+    # Replaces all words w in string s with r
     i = 0
+    s_len = len(s)
     while i < len(s):
         char = s[i]
         if char.lower() in ENGLISH_ALPHABET:
-            word_end_index = i + len(c)
-            if word_end_index >= len(s):
+            word_end_index = i + len(w)
+            if word_end_index >= len(s) - 1:
                 return s
             word_compare = s[i:word_end_index]
             letter_check = s[word_end_index]
-            if word_compare == c and letter_check not in ENGLISH_ALPHABET:
-                s = replace_characters(s, c, r)
+            if word_compare == w and letter_check not in ENGLISH_ALPHABET:
+                s = replace_characters_range(s, i, word_end_index, r)
         elif char in SPECIAL_CHARACTERS:
             i += 1
             continue
