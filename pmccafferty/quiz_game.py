@@ -151,13 +151,12 @@ class Quiz:
             )
         else:
             rating_increment = random.randint(5, 15)
-            updated_rating = current_rating + rating_increment
             self.firebase_interactor.write_to_node(user_rating_path, current_rating + rating_increment)
             self.firebase_interactor.write_to_node(user_streak_path, current_streak + 1)
             await ChannelInteractor.send_message(
                 message,
-                "Congratulations, {0}, that is correct!\n\nCurrent streak: {3}"
-                .format(username, current_rating, updated_rating, current_streak + 1)
+                "Congratulations, {0}, that is correct!\nCurrent streak: {1}"
+                .format(username, current_streak + 1)
             )
         self.players.__delitem__(player)
 
