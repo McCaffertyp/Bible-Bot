@@ -121,10 +121,10 @@ class Quiz:
         else:
             if option == "rating":
                 current_rating = self.firebase_interactor.read_from_node(rating_path)
-                await ChannelInteractor.send_message(context, "{0} your rating is currently {1}".format(context.author.mention, current_rating))
+                await ChannelInteractor.send_message(context, "{0} Current Rating: {1}".format(context.author.mention, current_rating))
             else:
                 best_streak = self.firebase_interactor.read_from_node(best_streak_path)
-                await ChannelInteractor.send_message(context, "{0} your best streak is {1}".format(context.author.mention, best_streak))
+                await ChannelInteractor.send_message(context, "{0} Best Streak: {1}".format(context.author.mention, best_streak))
 
     async def check_answer(self, message, answer: str):
         if "$quiz" in message.content:

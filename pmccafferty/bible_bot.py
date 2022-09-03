@@ -3,7 +3,7 @@
 Created on Wed Aug 24 04:35:00 2022
 
 @author: Paul McCafferty
-@version: 11.54
+@version: 11.55
 """
 import asyncio
 import operator
@@ -377,7 +377,6 @@ async def can_user_use_command(context: Context) -> bool:
                 break
 
     return can_use_command
-
 
 
 #############

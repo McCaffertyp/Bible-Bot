@@ -4,7 +4,7 @@
 RETURN_ERROR = "error"
 NUMBERS_STRING = "0123456789"
 ENGLISH_ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-SPECIAL_CHARACTERS = "`~!@#$%^&*()-_=+[{]}\\|;:'\",<.>/?"
+SPECIAL_CHARACTERS = "`~!@#$%^&*()-_=+[{]}\\|;:'\",<.>/?“"
 HASH_SKIPS = {"0": 13, "1": 8, "2": 1, "3": 42, "4": 27}
 
 
@@ -130,12 +130,21 @@ def replace_characters(s: str, c: str, r: str) -> str:
 
 def replace_words(s: str, c: str, r: str) -> str:
     # Replaces all words "c" in string "s" with "r"
-    for i in range(0, len(s)):
+    i = 0
+    while i < len(s):
         char = s[i]
         if char.lower() in ENGLISH_ALPHABET:
-            if s[i:len(c)] == c and s[i + len(c)] not in ENGLISH_ALPHABET:
+            word_end_index = i + len(c)
+            if word_end_index >= len(s):
+                return s
+            word_compare = s[i:word_end_index]
+            letter_check = s[word_end_index]
+            if word_compare == c and letter_check not in ENGLISH_ALPHABET:
                 s = replace_characters(s, c, r)
-        i += (s.find(" ", i) - 1)
+        elif char in SPECIAL_CHARACTERS:
+            i += 1
+            continue
+        i = s.find(" ", i) + 1
     return s
 
 
