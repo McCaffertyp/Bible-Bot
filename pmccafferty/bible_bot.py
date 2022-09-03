@@ -118,7 +118,7 @@ async def print_help(context: Context):
     lookup_help_text = "$lookup [book] [chapter:verse] (book_num)\nLooks up and prints out the verse that was searched."
     rlookup_help_text = "$rlookup\nLooks up and prints out a random verse."
     keywords_help_text = "$keywords [word]\nTakes in any amount of words and searches online for the top related verse to print out as a response."
-    quiz_help_text = "$quiz [ref/word/sentence (book)\nSends a random verse with either the reference, a single word, or a sentence missing for the user to solve."
+    quiz_help_text = "$quiz [ref/word/sentence/rating/streak] (book)\nSends a random verse with either the reference, a single word, or a sentence missing for the user to solve."
     hangman_help_text = "$hangman [easy/medium/hard/status/quit] (none/low/medium/high)\nUsing hangman starts a game. Three modes, status and quit are the accepted arguments. Change prefill with secondary option."
     hguess_help_text = "$hguess [guess]\nUsed to submit a guess to an ongoing hangman puzzle for the message sender."
     math_help_text = "$math [number_a] [operator] [number_b]\nProvided two numbers and a method of operation, the bot will produce the result. Supported operators: +, -, *, /, ^"
