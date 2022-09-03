@@ -7,13 +7,23 @@ import channel_interactor as ChannelInteractor
 import util.string as StringHelper
 import verse_interactor as VerseInteractor
 from util import logger
+from firebase_interactor import FirebaseInteractor
+
+
+#############
+# Constants #
+#############
+FIREBASE_STREAK_REF = "bestStreak"
+FIREBASE_RATING_REF = "rating"
+DEFAULT_POINTS = 100
 
 
 class Quiz:
-    def __init__(self, bot: Bot, guild_name: str, excluded_quiz_words: list):
+    def __init__(self, bot: Bot, guild_name: str, excluded_quiz_words: list, firebase_interactor: FirebaseInteractor):
         self.bot = bot
         self.guild_name = guild_name
         self.excluded_quiz_words = excluded_quiz_words
+        self.firebase_interactor = firebase_interactor
         self.game_name = ChannelInteractor.GAME_CHANNEL_QUIZ
         self.game_channel_name = ChannelInteractor.GAME_CHANNEL_QUIZ_DEFAULT_NAME
         self.players = {}
@@ -49,50 +59,96 @@ class Quiz:
         verse_reference = random_verse[verse_reference_start:verse_reference_end]
 
         if option == "ref":
-            quiz_verse = StringHelper.replace_characters(random_verse, verse_reference, "_")
-            self.players[player] = verse_reference
+            quiz_verse = self.option_ref(player, random_verse, verse_reference)
         elif option == "word":
-            verse_words = verse_text.split(" ")
-            full_remove_word = verse_words[random.randint(0, (len(verse_words) - 1))]
-            remove_word = StringHelper.remove_non_alphabet(full_remove_word)
-            while remove_word.lower() in self.excluded_quiz_words:
-                logger.d("Tried to remove \"{0}\" from verse. Fetching new word...".format(remove_word))
-                full_remove_word = verse_words[random.randint(0, (len(verse_words) - 1))]
-                remove_word = StringHelper.remove_non_alphabet(full_remove_word)
-            quiz_verse = StringHelper.replace_characters(random_verse, remove_word, "_")
-            self.players[player] = remove_word
+            quiz_verse = self.option_word(player, random_verse, verse_text)
         elif option == "sentence":
-            verse_words = verse_text.split(" ")
-            remove_word_count = random.randint(2, (len(verse_words) - 1))
-            remove_start_word_index = random.randint(0, (len(verse_words) - remove_word_count))
-            remove_end_word_index = remove_start_word_index + remove_word_count - 1
-            remove_start_word = verse_words[remove_start_word_index]
-            remove_end_word = verse_words[remove_end_word_index]
-            remove_sentence = random_verse[random_verse.find(remove_start_word):(
-                        random_verse.find(remove_end_word) + len(remove_end_word))]
-            quiz_verse = StringHelper.replace_characters(random_verse, remove_sentence, "_")
-            self.players[player] = remove_sentence
-            # all_words = ""
-            # for i in range(remove_start_index, (remove_start_index + remove_word_count)):
-            #     remove_word = verse_words[i].replace(",", "")
-            #     quiz_verse = replace_characters(quiz_verse, remove_word, "_")
-            #     all_words = "{0},{1}".format(all_words, remove_word)
-            # quizzing[player] = all_words[1:(len(all_words) - 1)]
+            quiz_verse = self.option_sentence(player, random_verse, verse_text)
+        elif option == "rating" or option == "streak":
+            self.option_rating_streak(context, option, username)
+            return
         else:
             await ChannelInteractor.send_message(context, "{0}, that option is unsupported.".format(context.author.mention))
             return
 
+        user_database_path = "{0}/{1}".format(self.game_name, username)
+        if not self.firebase_interactor.check_node_exists(user_database_path):
+            rating_path = "{0}/{1}".format(user_database_path, FIREBASE_RATING_REF)
+            streak_path = "{0}/{1}".format(user_database_path, FIREBASE_STREAK_REF)
+            self.firebase_interactor.write_to_node(rating_path, DEFAULT_POINTS)
+            self.firebase_interactor.write_to_node(streak_path, 0)
         await ChannelInteractor.send_message(context, "{0}, your quiz is:\n{1}".format(context.author.mention, quiz_verse))
+
+    def option_ref(self, player: str, random_verse: str, verse_reference: str) -> str:
+        self.players[player] = verse_reference
+        return StringHelper.replace_characters(random_verse, verse_reference, "_")
+
+    def option_word(self, player: str, random_verse: str, verse_text: str) -> str:
+        verse_words = verse_text.split(" ")
+        full_remove_word = verse_words[random.randint(0, (len(verse_words) - 1))]
+        remove_word = StringHelper.remove_non_alphabet(full_remove_word)
+        while remove_word.lower() in self.excluded_quiz_words:
+            logger.d("Tried to remove \"{0}\" from verse. Fetching new word...".format(remove_word))
+            full_remove_word = verse_words[random.randint(0, (len(verse_words) - 1))]
+            remove_word = StringHelper.remove_non_alphabet(full_remove_word)
+        self.players[player] = remove_word
+        return StringHelper.replace_characters(random_verse, remove_word, "_")
+
+    def option_sentence(self, player: str, random_verse: str, verse_text: str) -> str:
+        verse_words = verse_text.split(" ")
+        remove_word_count = random.randint(2, (len(verse_words) - 1))
+        remove_start_word_index = random.randint(0, (len(verse_words) - remove_word_count))
+        remove_end_word_index = remove_start_word_index + remove_word_count - 1
+        remove_start_word = verse_words[remove_start_word_index]
+        remove_end_word = verse_words[remove_end_word_index]
+        remove_sentence = random_verse[random_verse.find(remove_start_word):(random_verse.find(remove_end_word) + len(remove_end_word))]
+        self.players[player] = remove_sentence
+        # all_words = ""
+        # for i in range(remove_start_index, (remove_start_index + remove_word_count)):
+        #     remove_word = verse_words[i].replace(",", "")
+        #     quiz_verse = replace_characters(quiz_verse, remove_word, "_")
+        #     all_words = "{0},{1}".format(all_words, remove_word)
+        # quizzing[player] = all_words[1:(len(all_words) - 1)]
+        return StringHelper.replace_characters(random_verse, remove_sentence, "_")
+
+    def option_rating_streak(self, context: Context, option: str, username: str):
+        user_database_path = "{0}/{1}".format(self.game_name, username)
+        rating_path = "{0}/{1}".format(user_database_path, FIREBASE_RATING_REF)
+        streak_path = "{0}/{1}".format(user_database_path, FIREBASE_STREAK_REF)
+        if not self.firebase_interactor.check_node_exists(user_database_path):
+            await ChannelInteractor.send_message(context, "{0} you aren't currently in the system.\nSetting up your profile...".format(context.author.mention))
+            self.firebase_interactor.write_to_node(rating_path, DEFAULT_POINTS)
+            self.firebase_interactor.write_to_node(streak_path, 0)
+        else:
+            if option == "rating":
+                current_rating = self.firebase_interactor.read_from_node(rating_path)
+                await ChannelInteractor.send_message(context, "{0} your rating is currently: {1}".format(context.author.mention, current_rating))
+            else:
+                current_streak = self.firebase_interactor.read_from_node(streak_path)
+                await ChannelInteractor.send_message(context, "{0} your streak is currently: {1}".format(context.author.mention, current_streak))
 
     async def check_answer(self, message, answer: str):
         if "$quiz" in message.content:
             return
         player = str(message.author)
         username = player.split("#")[0]
+        user_rating_path = "{0}/{1}/{2}".format(self.game_name, username, FIREBASE_RATING_REF)
+        user_streak_path = "{0}/{1}/{2}".format(self.game_name, username, FIREBASE_STREAK_REF)
+        current_rating = int(self.firebase_interactor.read_from_node(user_rating_path))
+        current_streak = int(self.firebase_interactor.read_from_node(user_streak_path))
         correct_answer: str = self.players[player]
         if answer.lower() != correct_answer.lower():
-            await ChannelInteractor.send_message(message, "Sorry, {0}, that is incorrect. Was looking for:\n{1}".format(username, correct_answer))
+            rating_decrement = random.randint(1, 5)
+            updated_rating = current_rating - rating_decrement
+            if updated_rating < 0:
+                updated_rating = 0
+            self.firebase_interactor.write_to_node(user_rating_path, updated_rating)
+            self.firebase_interactor.write_to_node(user_streak_path, 0)
+            await ChannelInteractor.send_message(message, "Sorry, {0}, that is incorrect. Was looking for:\n{1}\n\nStreak reset from: {2}".format(username, correct_answer, current_streak))
         else:
+            rating_increment = random.randint(5, 15)
+            self.firebase_interactor.write_to_node(user_rating_path, current_rating + rating_increment)
+            self.firebase_interactor.write_to_node(user_streak_path, current_streak + 1)
             await ChannelInteractor.send_message(message, "Congratulations, {0}, that is correct!".format(username))
         self.players.__delitem__(player)
 

@@ -3,8 +3,9 @@
 #############
 RETURN_ERROR = "error"
 NUMBERS_STRING = "0123456789"
-ENGLISH_ALPHABET = "abcdefghijklmnopqrstuvwxyz"
+ENGLISH_ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 SPECIAL_CHARACTERS = "`~!@#$%^&*()-_=+[{]}\\|;:'\",<.>/?"
+HASH_SKIPS = {"0": 13, "1": 8, "2": 1, "3": 42, "4": 27}
 
 
 def convert_twenty_four_to_twelve(time: str) -> str:
@@ -23,9 +24,9 @@ def convert_twenty_four_to_twelve(time: str) -> str:
         return "{0}:{1} PM".format(23, minute)
 
 
-def get_only_words(verse_words: list) -> list:
+def get_only_words(word_list: list) -> list:
     words = []
-    for word in verse_words:
+    for word in word_list:
         stripped_word = remove_non_alphabet(word)
         if len(stripped_word) > 0:
             words.append(stripped_word)
@@ -49,6 +50,31 @@ def handle_discord_formatting(text: str) -> str:
             discord_formatted = "{0}{1}".format(discord_formatted, c)
 
     return discord_formatted
+
+
+def quick_hash(s: str, loop_count: int, hash_length: int = 25) -> str:
+    hashed_string = ""
+    words_only = get_only_words(s.split())
+    for word in words_only:
+        hashed_string = "{0}{1}".format(hashed_string, word)
+
+    while len(hashed_string) < hash_length:
+        hashed_string = "{0}{1}".format(hashed_string, hashed_string)
+
+    hashed_string = hashed_string[0:hash_length]
+
+    for i in range(0, loop_count):
+        for j in range(0, hash_length):
+            c = hashed_string[j]
+            hash_skip = HASH_SKIPS[str(i % 5)]
+            hash_index = ENGLISH_ALPHABET.find(c) + hash_skip
+            if hash_index > 51:
+                hash_index -= 52
+            elif hash_index < 0:
+                hash_index = 0
+            hashed_string = "{0}{1}{2}".format(hashed_string[:j], ENGLISH_ALPHABET[hash_index], hashed_string[j + 1:])
+
+    return hashed_string
 
 
 def is_banned_word(swear_words: list, swear_word: str, sentence: str) -> bool:

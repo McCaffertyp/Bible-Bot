@@ -3,13 +3,14 @@
 Created on Wed Aug 24 04:35:00 2022
 
 @author: Paul McCafferty
-@version: 10.47
+@version: 11.47
 """
 import asyncio
 import operator
 import os
 import sys
 
+import pyrebase
 import discord
 from discord.channel import TextChannel
 from discord.ext import commands
@@ -21,6 +22,7 @@ import util.string as StringHelper
 import util.time as TimeHelper
 import verse_interactor as VerseInteractor
 from channel_interactor import ChannelType
+from firebase_interactor import FirebaseInteractor, FIREBASE_CONFIG
 from hangman_game import Hangman, HANGMAN_PREFILL_LEVEL_NONE
 from quiz_game import Quiz
 from util import logger
@@ -28,8 +30,6 @@ from util import logger
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 INVALID_GUILD_ERROR_CODE = 600
-# Supported times: 5s, 10s, 15s, 30s, 1m, 2m, 5m, 10m, 15m, 30m, 1h, 2h, 6h
-DISCORD_SUPPORTED_TIMES = ["5s", "10s", "15s", "30s", "1m", "2m", "5m", "10m", "15m", "30m", "1h", "2h", "6h"]
 RUNNING_DEBUGGER = False
 
 if not RUNNING_DEBUGGER:
@@ -48,8 +48,22 @@ if not RUNNING_DEBUGGER:
 else:
     GUILD = "Squeeze"
 
+#############
+# Constants #
+#############
+# Supported times: 5s, 10s, 15s, 30s, 1m, 2m, 5m, 10m, 15m, 30m, 1h, 2h, 6h
+DISCORD_SUPPORTED_TIMES = ["5s", "10s", "15s", "30s", "1m", "2m", "5m", "10m", "15m", "30m", "1h", "2h", "6h"]
+
+
+########
+# init #
+########
 intents = discord.Intents().all()
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("$"), intents=intents)
+firebase = pyrebase.initialize_app(FIREBASE_CONFIG)
+database = firebase.database()
+guild_string_ref = StringHelper.quick_hash(GUILD, 5, 15)
+firebase_interactor = FirebaseInteractor(database, guild_string_ref)
 
 #############
 # Variables #
@@ -57,7 +71,7 @@ bot = commands.Bot(command_prefix=commands.when_mentioned_or("$"), intents=inten
 swear_words = [line.split("\n")[0] for line in open("data/swear_words.txt", "r").readlines()]
 operators = {"+": operator.add, "-": operator.sub, "*": operator.mul, "/": operator.truediv, "^": operator.pow}
 excluded_quiz_words = [line.split("\n")[0] for line in open("data/excluded_quiz_words.txt", "r").readlines()]
-quiz = Quiz(bot, GUILD, excluded_quiz_words)
+quiz = Quiz(bot, GUILD, excluded_quiz_words, firebase_interactor)
 hangman = Hangman(bot, GUILD)
 server_napping = False
 time_remaining = 0
