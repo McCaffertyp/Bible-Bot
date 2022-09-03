@@ -88,7 +88,7 @@ class Quiz:
             full_remove_word = verse_words[random.randint(0, (len(verse_words) - 1))]
             remove_word = StringHelper.remove_non_alphabet(full_remove_word)
         self.players[player] = remove_word
-        return StringHelper.replace_characters(random_verse, remove_word, "_")
+        return StringHelper.replace_characters(random_verse, " {0} ".format(remove_word), "_")
 
     def option_sentence(self, player: str, random_verse: str, verse_text: str) -> str:
         verse_words = verse_text.split(" ")

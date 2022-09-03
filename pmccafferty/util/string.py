@@ -125,7 +125,7 @@ def replace_characters(s: str, c: str, r: str) -> str:
     full_replace_string = ""
     for i in range(0, len(c), len(r)):
         full_replace_string = "{0}\\{1}".format(full_replace_string, r)
-    return s.replace(c, full_replace_string)
+    return s.replace(c, " {0} ".format(full_replace_string))
 
 
 def remove_emojis(s: str) -> str:
