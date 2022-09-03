@@ -121,11 +121,22 @@ def remove_non_alphabet(s: str) -> str:
 
 
 def replace_characters(s: str, c: str, r: str) -> str:
-    # Replaces characters "c" in string "s" with character "r"
+    # Replaces characters "c" in string "s" with "r"
     full_replace_string = ""
     for i in range(0, len(c), len(r)):
         full_replace_string = "{0}\\{1}".format(full_replace_string, r)
-    return s.replace(c, " {0} ".format(full_replace_string))
+    return s.replace(c, "{0}".format(full_replace_string))
+
+
+def replace_words(s: str, c: str, r: str) -> str:
+    # Replaces all words "c" in string "s" with "r"
+    for i in range(0, len(s)):
+        char = s[i]
+        if char.lower() in ENGLISH_ALPHABET:
+            if s[i:len(c)] == c and s[i + len(c)] not in ENGLISH_ALPHABET:
+                s = replace_characters(s, c, r)
+        i += (s.find(" ", i) - 1)
+    return s
 
 
 def remove_emojis(s: str) -> str:

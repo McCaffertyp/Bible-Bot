@@ -3,18 +3,20 @@
 Created on Wed Aug 24 04:35:00 2022
 
 @author: Paul McCafferty
-@version: 11.52
+@version: 11.54
 """
 import asyncio
 import operator
 import os
 import sys
+from typing import List
 
 import pyrebase
 import discord
 from discord.channel import TextChannel
 from discord.ext import commands
 from discord.ext.commands.context import Context
+from discord.role import Role
 from dotenv import load_dotenv
 
 import channel_interactor as ChannelInteractor
@@ -64,6 +66,7 @@ firebase = pyrebase.initialize_app(FIREBASE_CONFIG)
 database = firebase.database()
 guild_string_ref = StringHelper.quick_hash(GUILD, 5, 15)
 firebase_interactor = FirebaseInteractor(database, guild_string_ref)
+
 
 #############
 # Variables #
@@ -273,9 +276,14 @@ async def do_math(context: Context, num_one: float = None, op: str = None, num_t
     help="Puts all channels in slowmode for a specified period of time. Only the options which Discord allow are acceptable.",
     brief="Puts all channels in slowmode."
 )
-@commands.has_role("Mod")
 async def take_nap(context: Context, time_count: int = 1, time_unit: str = "hour"):
     # Technically although I only want to use those values in DISCORD_SUPPORTED_TIMES, they accept any seconds value from 1-21600
+    can_use_command = can_user_use_command(context)
+    if not can_use_command:
+        logger.d("User {0} tried to use the $naptime command".format(context.author))
+        await ChannelInteractor.send_message(context, "{0} you're not high enough on the role heirarchy to use that command.".format(context.author.mention))
+        return
+
     global server_napping
     global time_remaining
     if server_napping:
@@ -333,6 +341,12 @@ async def get_remaining_nap_time(context: Context):
     brief="End current nap."
 )
 async def end_server_nap(context: Context):
+    can_use_command = can_user_use_command(context)
+    if not can_use_command:
+        logger.d("User {0} tried to use the $napend command".format(context.author))
+        await ChannelInteractor.send_message(context, "{0} you're not high enough on the role heirarchy to use that command.".format(context.author.mention))
+        return
+
     global server_napping
     server_napping = False
     logger.d("Server nap was ended by {0}".format(context.author))
@@ -341,6 +355,30 @@ async def end_server_nap(context: Context):
 ####################
 # Helper functions #
 ####################
+
+#########
+# Async #
+#########
+async def can_user_use_command(context: Context) -> bool:
+    can_use_command = False
+    user = context.author
+    if await bot.is_owner(user):
+        can_use_command = True
+
+    if not can_use_command:
+        roles: List[Role] = user.roles
+        for role in roles:
+            role_name = role.name.lower()
+            if role.permissions.administrator:
+                can_use_command = True
+                break
+            elif role_name == "mod" or role_name == "admin":
+                can_use_command = True
+                break
+
+    return can_use_command
+
+
 
 #############
 # Non-Async #
