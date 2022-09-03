@@ -139,7 +139,6 @@ def replace_characters_range(s: str, start: int, end: int, r: str) -> str:
 def replace_words(s: str, w: str, r: str) -> str:
     # Replaces all words w in string s with r
     i = 0
-    s_len = len(s)
     while i < len(s):
         char = s[i]
         if char.lower() in ENGLISH_ALPHABET:
