@@ -38,7 +38,7 @@ class Quiz:
             return
 
         player = str(context.author)
-        username = player.split("#")[0]
+        username = StringHelper.remove_non_alphabet(player.split("#")[0])
         if option is None:
             await ChannelInteractor.send_message(context, "{0} provided no option. Choosing a random one.".format(username))
             options = ["ref", "word", "sentence"]
@@ -131,7 +131,7 @@ class Quiz:
         if "$quiz" in message.content:
             return
         player = str(message.author)
-        username = player.split("#")[0]
+        username = StringHelper.make_valid_firebase_name(player.split("#")[0])
         user_rating_path = "{0}/{1}/{2}".format(self.game_name, username, FIREBASE_RATING_REF)
         user_streak_path = "{0}/{1}/{2}".format(self.game_name, username, FIREBASE_STREAK_REF)
         current_rating = int(self.firebase_interactor.read_from_node(user_rating_path))
@@ -144,12 +144,21 @@ class Quiz:
                 updated_rating = 0
             self.firebase_interactor.write_to_node(user_rating_path, updated_rating)
             self.firebase_interactor.write_to_node(user_streak_path, 0)
-            await ChannelInteractor.send_message(message, "Sorry, {0}, that is incorrect. Was looking for:\n{1}\n\nStreak reset from: {2}".format(username, correct_answer, current_streak))
+            await ChannelInteractor.send_message(
+                message,
+                "Sorry, {0}, that is incorrect. Was looking for:\n{1}\n\nRating decreased: {2} -> {3}\nStreak reset from: {4}"
+                .format(username, correct_answer, current_rating, updated_rating, current_streak)
+            )
         else:
             rating_increment = random.randint(5, 15)
+            updated_rating = current_rating + rating_increment
             self.firebase_interactor.write_to_node(user_rating_path, current_rating + rating_increment)
             self.firebase_interactor.write_to_node(user_streak_path, current_streak + 1)
-            await ChannelInteractor.send_message(message, "Congratulations, {0}, that is correct!".format(username))
+            await ChannelInteractor.send_message(
+                message,
+                "Congratulations, {0}, that is correct! Rating increased: {1} -> {2}\nCurrent streak: {3}"
+                .format(username, current_rating, updated_rating, current_streak + 1)
+            )
         self.players.__delitem__(player)
 
     ###########

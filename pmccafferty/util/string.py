@@ -52,6 +52,31 @@ def handle_discord_formatting(text: str) -> str:
     return discord_formatted
 
 
+def is_banned_word(swear_words: list, swear_word: str, sentence: str) -> bool:
+    start_index_of_swear_word = sentence.find(swear_word)
+    end_index_of_swear_word = start_index_of_swear_word + len(swear_word)
+    word = sentence[start_index_of_swear_word:end_index_of_swear_word]
+
+    left = start_index_of_swear_word - 1
+    right = end_index_of_swear_word
+
+    while left > -1 and sentence[left] != " ":
+        word = "{0}{1}".format(sentence[left], word)
+        left -= 1
+
+    while right < len(sentence) and sentence[right] != " ":
+        word = "{0}{1}".format(word, sentence[right])
+        right += 1
+
+    return word in swear_words
+
+
+def make_valid_firebase_name(s: str) -> str:
+    if "𝕁𝕒𝕧𝕒" in s:
+        s = s.replace("𝕁𝕒𝕧𝕒", "Java")
+    return s.replace(".", "").replace(",", "")
+
+
 def quick_hash(s: str, loop_count: int, hash_length: int = 25) -> str:
     hashed_string = ""
     words_only = get_only_words(s.split())
@@ -75,25 +100,6 @@ def quick_hash(s: str, loop_count: int, hash_length: int = 25) -> str:
             hashed_string = "{0}{1}{2}".format(hashed_string[:j], ENGLISH_ALPHABET[hash_index], hashed_string[j + 1:])
 
     return hashed_string
-
-
-def is_banned_word(swear_words: list, swear_word: str, sentence: str) -> bool:
-    start_index_of_swear_word = sentence.find(swear_word)
-    end_index_of_swear_word = start_index_of_swear_word + len(swear_word)
-    word = sentence[start_index_of_swear_word:end_index_of_swear_word]
-
-    left = start_index_of_swear_word - 1
-    right = end_index_of_swear_word
-
-    while left > -1 and sentence[left] != " ":
-        word = "{0}{1}".format(sentence[left], word)
-        left -= 1
-
-    while right < len(sentence) and sentence[right] != " ":
-        word = "{0}{1}".format(word, sentence[right])
-        right += 1
-
-    return word in swear_words
 
 
 def remove_html_tags(text: str) -> str:

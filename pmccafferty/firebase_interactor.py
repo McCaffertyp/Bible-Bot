@@ -48,8 +48,10 @@ class FirebaseInteractor:
         for name in path_names:
             current_node = current_node.child(name)
 
-        logger.d("Checking database path={0} exists".format(current_node.path))
+        db_path = current_node.path
         if current_node.get().val():
+            logger.d("Database path={0} exists".format(db_path))
             return True
         else:
+            logger.d("Database path={0} does not exist".format(db_path))
             return False
