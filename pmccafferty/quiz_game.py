@@ -111,7 +111,7 @@ class Quiz:
         # quizzing[player] = all_words[1:(len(all_words) - 1)]
         return StringHelper.replace_characters(random_verse, remove_sentence, "_")
 
-    def option_rating_streak(self, context: Context, option: str, username: str):
+    async def option_rating_streak(self, context: Context, option: str, username: str):
         user_database_path = "{0}/{1}".format(self.game_name, username)
         rating_path = "{0}/{1}".format(user_database_path, FIREBASE_RATING_REF)
         streak_path = "{0}/{1}".format(user_database_path, FIREBASE_STREAK_REF)
