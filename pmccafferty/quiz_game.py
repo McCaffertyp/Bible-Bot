@@ -15,6 +15,7 @@ from firebase_interactor import FirebaseInteractor
 #############
 FIREBASE_BEST_STREAK_REF = "bestStreak"
 FIREBASE_CURRENT_STREAK_REF = "currentStreak"
+FIREBASE_GAMES_PLAYED_REF = "gamesPlayed"
 FIREBASE_RATING_REF = "rating"
 DEFAULT_POINTS = 100
 
@@ -107,24 +108,29 @@ class Quiz:
         # quizzing[player] = all_words[1:(len(all_words) - 1)]
         return StringHelper.replace_characters(random_verse, remove_sentence, "_")
 
-    async def option_rating_streak(self, context: Context, option: str, username: str):
+    async def option_stat(self, context: Context, option: str, username: str):
         user_database_path = "{0}/{1}".format(self.game_name, username)
         rating_path = "{0}/{1}".format(user_database_path, FIREBASE_RATING_REF)
         best_streak_path = "{0}/{1}".format(user_database_path, FIREBASE_BEST_STREAK_REF)
         current_streak_path = "{0}/{1}".format(user_database_path, FIREBASE_CURRENT_STREAK_REF)
+        games_played_path = "{0}/{1}".format(user_database_path, FIREBASE_GAMES_PLAYED_REF)
         if not self.firebase_interactor.check_node_exists(user_database_path):
             await ChannelInteractor.send_message(context, "{0} you aren't currently in the system.\nSetting up your profile...".format(context.author.mention))
             self.firebase_interactor.write_to_node(rating_path, DEFAULT_POINTS)
             self.firebase_interactor.write_to_node(best_streak_path, 0)
             self.firebase_interactor.write_to_node(current_streak_path, 0)
+            self.firebase_interactor.write_to_node(games_played_path, 0)
             await ChannelInteractor.send_message(context, "{0} you are now in the database. Have fun playing!")
         else:
             if option == "rating":
                 current_rating = self.firebase_interactor.read_from_node(rating_path)
                 await ChannelInteractor.send_message(context, "{0} Current Rating: {1}".format(context.author.mention, current_rating))
-            else:
+            elif option == "streak":
                 best_streak = self.firebase_interactor.read_from_node(best_streak_path)
                 await ChannelInteractor.send_message(context, "{0} Best Streak: {1}".format(context.author.mention, best_streak))
+            else:
+                games_played = self.firebase_interactor.read_from_node(games_played_path)
+                await ChannelInteractor.send_message(context, "{0} Games Played: {1}".format(context.author.mention, games_played))
 
     async def check_answer(self, message, answer: str):
         if "$quiz" in message.content:
@@ -134,9 +140,11 @@ class Quiz:
         user_rating_path = "{0}/{1}/{2}".format(self.game_name, username, FIREBASE_RATING_REF)
         user_best_streak_path = "{0}/{1}/{2}".format(self.game_name, username, FIREBASE_BEST_STREAK_REF)
         user_current_streak_path = "{0}/{1}/{2}".format(self.game_name, username, FIREBASE_CURRENT_STREAK_REF)
+        user_games_played_path = "{0}/{1}/{2}".format(self.game_name, username, FIREBASE_GAMES_PLAYED_REF)
         current_rating = int(self.firebase_interactor.read_from_node(user_rating_path))
         best_streak = int(self.firebase_interactor.read_from_node(user_best_streak_path))
         current_streak = int(self.firebase_interactor.read_from_node(user_current_streak_path))
+        games_played = int(self.firebase_interactor.read_from_node(user_games_played_path))
         correct_answer: str = self.players[player]
         if answer.lower() != correct_answer.lower():
             rating_decrement = random.randint(1, 5)
@@ -161,18 +169,22 @@ class Quiz:
                 "Congratulations, {0}, that is correct!\nCurrent streak: {1}"
                 .format(username, current_streak + 1)
             )
+        self.firebase_interactor.write_to_node(user_games_played_path, games_played + 1)
         self.players.__delitem__(player)
 
     def check_and_create_player_data(self, username: str):
         user_rating_path = "{0}/{1}/{2}".format(self.game_name, username, FIREBASE_RATING_REF)
         user_best_streak_path = "{0}/{1}/{2}".format(self.game_name, username, FIREBASE_BEST_STREAK_REF)
         user_current_streak_path = "{0}/{1}/{2}".format(self.game_name, username, FIREBASE_CURRENT_STREAK_REF)
+        user_games_played_path = "{0}/{1}/{2}".format(self.game_name, username, FIREBASE_GAMES_PLAYED_REF)
         if not self.firebase_interactor.check_node_exists(user_rating_path):
             self.firebase_interactor.write_to_node(user_rating_path, DEFAULT_POINTS)
         if not self.firebase_interactor.check_node_exists(user_best_streak_path):
             self.firebase_interactor.write_to_node(user_best_streak_path, 0)
         if not self.firebase_interactor.check_node_exists(user_current_streak_path):
             self.firebase_interactor.write_to_node(user_current_streak_path, 0)
+        if not self.firebase_interactor.check_node_exists(user_games_played_path):
+            self.firebase_interactor.write_to_node(user_games_played_path, 0)
 
     ###########
     # Setters #
