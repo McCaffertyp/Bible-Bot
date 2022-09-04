@@ -67,7 +67,7 @@ class Quiz:
         elif option == "sentence":
             quiz_verse = self.option_sentence(player, random_verse, verse_text)
         elif option == "rating" or option == "streak":
-            await self.option_rating_streak(context, option, username)
+            await self.option_stat(context, option, username)
             return
         else:
             await ChannelInteractor.send_message(context, "{0}, that option is unsupported.".format(context.author.mention))
