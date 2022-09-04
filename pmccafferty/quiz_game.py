@@ -66,7 +66,7 @@ class Quiz:
             quiz_verse = self.option_word(player, random_verse, verse_text)
         elif option == "sentence":
             quiz_verse = self.option_sentence(player, random_verse, verse_text)
-        elif option == "rating" or option == "streak":
+        elif option == "rating" or option == "streak" or option == "games":
             await self.option_stat(context, option, username)
             return
         else:
