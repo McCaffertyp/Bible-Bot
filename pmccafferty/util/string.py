@@ -71,6 +71,15 @@ def is_banned_word(swear_words: list, swear_word: str, sentence: str) -> bool:
     return word in swear_words
 
 
+def filter_message(swear_words: list, message: str) -> str:
+
+    return ""
+
+
+def check_swear_word_variations(swear_word: str, check_word) -> bool:
+    return True
+
+
 def make_valid_firebase_name(s: str) -> str:
     if "𝕁𝕒𝕧𝕒" in s:
         s = s.replace("𝕁𝕒𝕧𝕒", "Java")

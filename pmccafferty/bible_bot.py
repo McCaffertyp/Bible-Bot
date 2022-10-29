@@ -278,10 +278,10 @@ async def do_math(context: Context, num_one: float = None, op: str = None, num_t
 )
 async def take_nap(context: Context, time_count: int = 1, time_unit: str = "hour"):
     # Technically although I only want to use those values in DISCORD_SUPPORTED_TIMES, they accept any seconds value from 1-21600
-    can_use_command = can_user_use_command(context)
+    can_use_command = await can_user_use_command(context)
     if not can_use_command:
         logger.d("User {0} tried to use the $naptime command".format(context.author))
-        await ChannelInteractor.send_message(context, "{0} you're not high enough on the role heirarchy to use that command.".format(context.author.mention))
+        await ChannelInteractor.send_message(context, "{0} you're not high enough on the role hierarchy to use that command.".format(context.author.mention))
         return
 
     global server_napping
@@ -341,10 +341,10 @@ async def get_remaining_nap_time(context: Context):
     brief="End current nap."
 )
 async def end_server_nap(context: Context):
-    can_use_command = can_user_use_command(context)
+    can_use_command = await can_user_use_command(context)
     if not can_use_command:
         logger.d("User {0} tried to use the $napend command".format(context.author))
-        await ChannelInteractor.send_message(context, "{0} you're not high enough on the role heirarchy to use that command.".format(context.author.mention))
+        await ChannelInteractor.send_message(context, "{0} you're not high enough on the role hierarchy to use that command.".format(context.author.mention))
         return
 
     global server_napping
@@ -360,21 +360,20 @@ async def end_server_nap(context: Context):
 # Async #
 #########
 async def can_user_use_command(context: Context) -> bool:
-    can_use_command = False
     user = context.author
     if await bot.is_owner(user):
-        can_use_command = True
+        return True
 
-    if not can_use_command:
-        roles: List[Role] = user.roles
-        for role in roles:
-            role_name = role.name.lower()
-            if role.permissions.administrator:
-                can_use_command = True
-                break
-            elif role_name == "mod" or role_name == "admin":
-                can_use_command = True
-                break
+    can_use_command = False
+    roles: List[Role] = user.roles
+    for role in roles:
+        role_name = role.name.lower()
+        if role.permissions.administrator:
+            can_use_command = True
+            break
+        if role_name == "mod" or role_name == "admin":
+            can_use_command = True
+            break
 
     return can_use_command
 
