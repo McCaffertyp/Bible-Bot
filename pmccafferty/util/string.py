@@ -3,7 +3,7 @@
 #############
 from typing import List
 
-RETURN_ERROR = "error"
+RETURN_ERROR = "RETURN_ERROR"
 NUMBERS_STRING = "0123456789"
 ENGLISH_ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 SPECIAL_CHARACTERS = "`~!@#$%^&*()-_=+[{]}\\|;:'\",<.>/?“"

@@ -3,7 +3,7 @@
 Created on Wed Aug 24 04:35:00 2022
 
 @author: Paul McCafferty
-@version: 11.60
+@version: 12.60
 """
 import asyncio
 import operator
@@ -118,7 +118,7 @@ async def print_help(context: Context):
     setup_help_text = "$setup (quiz/hangman) (channel-name)\nUse this command with the game you want to setup and which channel to link it to. Is provided with default values of \"bible-quiz-game\" and \"bible-hangman-game\"."
     dailyvotd_help_text = "$dailyvotd [time]\nPrints the Verse of the Day every day at a consistent time. Using again while active turns it off."
     votd_help_text = "$votd\nPrints the Verse of the Day that was fetched from online."
-    lookup_help_text = "$lookup [book] [chapter:verse] (book_num)\nLooks up and prints out the verse that was searched."
+    lookup_help_text = "$lookup [book #/book] [book/chapter:verse] (chapter:verse)\nLooks up and prints out the verse that was searched."
     rlookup_help_text = "$rlookup\nLooks up and prints out a random verse."
     keywords_help_text = "$keywords [word]\nTakes in any amount of words and searches online for the top related verse to print out as a response."
     quiz_help_text = "$quiz [ref/word/sentence/rating/streak/games] (book)\nSends a random verse with either the reference, a single word, or a sentence missing for the user to solve."
@@ -205,11 +205,11 @@ async def send_verse_of_the_day(context: Context):
 
 @bot.command(
     name="lookup",
-    help="Looks up and prints out the verse that was searched.",
+    help="Looks up and prints out the verse(s) that was searched.",
     brief="Looks up verse and prints it."
 )
-async def lookup_verse(context: Context, book_or_book_num: str = None, book_or_chapter_verses: str = None, chapter_verses: str = None):
-    await VerseInteractor.lookup_verse(context, book_or_book_num, book_or_chapter_verses, chapter_verses)
+async def lookup_verses(context: Context, book_or_book_num: str = None, book_or_chapter_verses: str = None, chapter_verses: str = None):
+    await VerseInteractor.lookup_verses(context, book_or_book_num, book_or_chapter_verses, chapter_verses)
 
 
 @bot.command(
