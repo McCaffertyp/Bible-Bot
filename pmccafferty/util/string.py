@@ -1,6 +1,8 @@
 #############
 # Constants #
 #############
+from typing import List
+
 RETURN_ERROR = "error"
 NUMBERS_STRING = "0123456789"
 ENGLISH_ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -50,25 +52,6 @@ def handle_discord_formatting(text: str) -> str:
             discord_formatted = "{0}{1}".format(discord_formatted, c)
 
     return discord_formatted
-
-
-# def is_banned_word(swear_words: list, swear_word: str, sentence: str) -> bool:
-#     start_index_of_swear_word = sentence.find(swear_word)
-#     end_index_of_swear_word = start_index_of_swear_word + len(swear_word)
-#     word = sentence[start_index_of_swear_word:end_index_of_swear_word]
-#
-#     left = start_index_of_swear_word - 1
-#     right = end_index_of_swear_word
-#
-#     while left > -1 and sentence[left] != " ":
-#         word = "{0}{1}".format(sentence[left], word)
-#         left -= 1
-#
-#     while right < len(sentence) and sentence[right] != " ":
-#         word = "{0}{1}".format(word, sentence[right])
-#         right += 1
-#
-#     return word in swear_words
 
 
 def is_banned_word(swear_word: str, check_word: str) -> bool:
@@ -179,3 +162,10 @@ def remove_emojis(s: str) -> str:
         if c.lower() in ENGLISH_ALPHABET or c in SPECIAL_CHARACTERS or c in NUMBERS_STRING or c == " ":
             sentence = "{0}{1}".format(sentence, c)
     return sentence
+
+
+def contains_characters(check_string: str, check_list: List[str]) -> bool:
+    for c in check_list:
+        if c in check_string:
+            return True
+    return False

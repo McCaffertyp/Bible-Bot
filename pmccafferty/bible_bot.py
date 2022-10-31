@@ -3,7 +3,7 @@
 Created on Wed Aug 24 04:35:00 2022
 
 @author: Paul McCafferty
-@version: 11.59
+@version: 11.60
 """
 import asyncio
 import operator
@@ -208,8 +208,8 @@ async def send_verse_of_the_day(context: Context):
     help="Looks up and prints out the verse that was searched.",
     brief="Looks up verse and prints it."
 )
-async def lookup_verse(context: Context, book: str = None, chapter_verse: str = None, book_num: str = None):
-    await VerseInteractor.lookup_verse(context, book, chapter_verse, book_num)
+async def lookup_verse(context: Context, book_or_book_num: str = None, book_or_chapter_verses: str = None, chapter_verses: str = None):
+    await VerseInteractor.lookup_verse(context, book_or_book_num, book_or_chapter_verses, chapter_verses)
 
 
 @bot.command(

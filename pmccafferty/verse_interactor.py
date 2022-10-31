@@ -2,6 +2,7 @@ import csv
 import html as html_helper
 import http.client
 import random
+from typing import Union
 from urllib.request import urlopen
 
 from discord.ext.commands.context import Context
@@ -22,25 +23,35 @@ VERSE_LOOKUP_BASE_URL = "https://www.openbible.info/labs/cross-references/search
 KEYWORDS_BASE_URL = "https://www.biblegateway.com/quicksearch/?quicksearch="
 
 
-async def lookup_verse(context: Context, book: str = None, chapter_verse: str = None, book_num: str = None):
-    if book is None:
+async def lookup_verse(context: Context, book_or_book_num: str = None, book_or_chapter_verses: str = None, chapter_verses: str = None):
+    if book_or_book_num is None:
         await ChannelInteractor.send_message(context, "Unfortunately I cannot look that up. The Book was not provided.")
-    elif chapter_verse is None:
+    elif book_or_chapter_verses is None:
         await ChannelInteractor.send_message(context, "Unfortunately I cannot look that up. The Chapter:Verse was not provided.")
-    elif ":" not in chapter_verse:
+    elif is_chapter_verses(book_or_chapter_verses) and ":" not in book_or_chapter_verses:
+        await ChannelInteractor.send_message(context, "Unfortunately I cannot look that up. The Chapter:Verse was not in the proper format.")
+    elif chapter_verses is not None and ":" not in chapter_verses:
         await ChannelInteractor.send_message(context, "Unfortunately I cannot look that up. The Chapter:Verse was not in the proper format.")
     else:
-        if book_num is not None:
-            if int(book_num) > 3 or int(book_num) < 1:
+        book_num = -1
+        if is_book_num(book_or_book_num):
+            book_num = int(book_or_book_num)
+            if book_num > 3 or book_num < 1:
                 await ChannelInteractor.send_message(context, "Unfortunately I cannot look that up. The entered Book Number does not exist.")
-        verse_text = get_verse_from_lookup_url(book.lower(), chapter_verse, book_num)
+                return
+
+        if book_num == -1:
+            verse_text = get_verse_from_lookup_url(book_or_book_num.lower(), book_or_chapter_verses)
+        else:
+            verse_text = get_verse_from_lookup_url(book_or_chapter_verses.lower(), chapter_verses, str(book_num))
+
         if verse_text == "error":
-            if book_num is not None:
-                logger.w("Verse lookup \"{0} {1} {2}\" is not a valid reference".format(book_num, book, chapter_verse))
-                await ChannelInteractor.send_message(context, "Verse lookup \"{0} {1} {2}\" is not a valid reference.".format(book_num, book, chapter_verse))
+            if book_num == -1:
+                logger.w("Verse lookup \"{0} {1}\" is not a valid reference".format(book_or_book_num, book_or_chapter_verses))
+                await ChannelInteractor.send_message(context, "Verse lookup \"{0} {1}\" is not a valid reference.".format(book_or_book_num, book_or_chapter_verses))
             else:
-                logger.w("Verse lookup \"{0} {1}\" is not a valid reference".format(book, chapter_verse))
-                await ChannelInteractor.send_message(context, "Verse lookup \"{0} {1}\" is not a valid reference.".format(book, chapter_verse))
+                logger.w("Verse lookup \"{0} {1} {2}\" is not a valid reference".format(book_or_book_num, book_or_chapter_verses, chapter_verses))
+                await ChannelInteractor.send_message(context, "Verse lookup \"{0} {1} {2}\" is not a valid reference.".format(book_or_book_num, book_or_chapter_verses, chapter_verses))
             return
         else:
             await ChannelInteractor.send_message(context, StringHelper.remove_html_tags(verse_text))
@@ -202,3 +213,26 @@ def get_random_verse(book: str = None) -> str:
             verse_text = get_verse_from_lookup_url(book, random_chapter_verse, None)
 
         return StringHelper.remove_html_tags(verse_text)
+
+
+####################
+# Helper Functions #
+####################
+
+#############
+# Non-Async #
+#############
+def is_book_num(book_or_book_num: Union[str, int]) -> bool:
+    try:
+        int(book_or_book_num)
+        return True
+    except Exception as error:
+        logger.d(error)
+        return False
+
+
+def is_chapter_verses(book_or_chapter_verses: str) -> bool:
+    if ":" in book_or_chapter_verses:
+        return True
+    else:
+        return not StringHelper.contains_characters(book_or_chapter_verses, StringHelper.ENGLISH_ALPHABET)
