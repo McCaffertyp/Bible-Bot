@@ -52,32 +52,40 @@ def handle_discord_formatting(text: str) -> str:
     return discord_formatted
 
 
-def is_banned_word(swear_words: list, swear_word: str, sentence: str) -> bool:
-    start_index_of_swear_word = sentence.find(swear_word)
-    end_index_of_swear_word = start_index_of_swear_word + len(swear_word)
-    word = sentence[start_index_of_swear_word:end_index_of_swear_word]
-
-    left = start_index_of_swear_word - 1
-    right = end_index_of_swear_word
-
-    while left > -1 and sentence[left] != " ":
-        word = "{0}{1}".format(sentence[left], word)
-        left -= 1
-
-    while right < len(sentence) and sentence[right] != " ":
-        word = "{0}{1}".format(word, sentence[right])
-        right += 1
-
-    return word in swear_words
-
-
-def filter_message(swear_words: list, message: str) -> str:
-
-    return ""
+# def is_banned_word(swear_words: list, swear_word: str, sentence: str) -> bool:
+#     start_index_of_swear_word = sentence.find(swear_word)
+#     end_index_of_swear_word = start_index_of_swear_word + len(swear_word)
+#     word = sentence[start_index_of_swear_word:end_index_of_swear_word]
+#
+#     left = start_index_of_swear_word - 1
+#     right = end_index_of_swear_word
+#
+#     while left > -1 and sentence[left] != " ":
+#         word = "{0}{1}".format(sentence[left], word)
+#         left -= 1
+#
+#     while right < len(sentence) and sentence[right] != " ":
+#         word = "{0}{1}".format(word, sentence[right])
+#         right += 1
+#
+#     return word in swear_words
 
 
-def check_swear_word_variations(swear_word: str, check_word) -> bool:
-    return True
+def is_banned_word(swear_word: str, check_word: str) -> bool:
+    base_word = remove_repeated_letters(check_word)
+    return swear_word == base_word
+
+
+def remove_repeated_letters(word: str) -> str:
+    s: str = word[0]
+    c: str = word[0]
+    for cc in word[1:]:
+        if c == cc:
+            continue
+        else:
+            s = "{0}{1}".format(s, cc)
+            c = cc
+    return s
 
 
 def make_valid_firebase_name(s: str) -> str:

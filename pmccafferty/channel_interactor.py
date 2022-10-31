@@ -1,5 +1,6 @@
 from enum import Enum
 from pathlib import Path
+from typing import List
 
 import discord
 from discord.ext.commands import Bot
@@ -72,12 +73,14 @@ async def delete_message(message, word):
     await send_message(message, response)
 
 
-async def filter_message(message, swear_words: list):
-    for word in swear_words:
-        if word in message.content.lower():
-            if StringHelper.is_banned_word(swear_words, word, message.content.lower()):
-                await delete_message(message, word)
-                break
+async def filter_message(message, swear_words: List[str]):
+    message_words_whole: List[str] = message.content.lower().split(" ")
+    message_words_base: List[str] = [StringHelper.remove_repeated_letters(word) for word in message.content.lower().split(" ")]
+    for s_word in swear_words:
+        if s_word in message_words_whole:
+            await delete_message(message, s_word)
+        elif s_word in message_words_base:
+            await delete_message(message, s_word)
 
 
 async def is_correct_channel(context: Context, game, channel_name: str) -> bool:
