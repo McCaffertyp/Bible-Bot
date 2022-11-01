@@ -3,7 +3,7 @@
 Created on Wed Aug 24 04:35:00 2022
 
 @author: Paul McCafferty
-@version: 12.60
+@version: 12.61
 """
 import asyncio
 import operator

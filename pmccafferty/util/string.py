@@ -37,9 +37,9 @@ def get_only_words(word_list: list) -> list:
 
 def get_remaining_letters(guessed_letters: str) -> str:
     remaining_letters = ""
-    for c in ENGLISH_ALPHABET:
+    for c in ENGLISH_ALPHABET[:26]:
         if c not in guessed_letters:
-            remaining_letters = "{0}, {1}".format(remaining_letters, c)
+            remaining_letters = "{0}, {1}".format(remaining_letters, c.upper())
     return remaining_letters[2:]
 
 
