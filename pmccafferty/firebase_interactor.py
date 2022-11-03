@@ -5,6 +5,7 @@ from util import logger
 #############
 # Constants #
 #############
+LOG_TAG = "firebase_interactor"
 FIREBASE_CONFIG = {
     "apiKey": "AIzaSyBqzcUFslYLweMJjivRWNvuQm9JhDIsEfQ",
     "authDomain": "discord-bot-bible-bot.firebaseapp.com",
@@ -31,7 +32,7 @@ class FirebaseInteractor:
         current_node: Database = self.get_db_node()
         for name in path_names:
             current_node = current_node.child(name)
-        logger.d("Writing to database path={0}".format(current_node.path))
+        logger.d(LOG_TAG, "Writing to database path={0}".format(current_node.path))
         current_node.set(value)
 
     def read_from_node(self, path: str):
@@ -39,7 +40,7 @@ class FirebaseInteractor:
         current_node: Database = self.get_db_node()
         for name in path_names:
             current_node = current_node.child(name)
-        logger.d("Reading from database path={0}".format(current_node.path))
+        logger.d(LOG_TAG, "Reading from database path={0}".format(current_node.path))
         return current_node.get().val()
 
     def check_node_exists(self, path: str) -> bool:
@@ -50,8 +51,8 @@ class FirebaseInteractor:
 
         db_path = current_node.path
         if current_node.get().val():
-            logger.d("Database path={0} exists".format(db_path))
+            logger.d(LOG_TAG, "Database path={0} exists".format(db_path))
             return True
         else:
-            logger.d("Database path={0} does not exist".format(db_path))
+            logger.d(LOG_TAG, "Database path={0} does not exist".format(db_path))
             return False

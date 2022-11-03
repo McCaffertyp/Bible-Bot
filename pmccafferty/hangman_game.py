@@ -10,6 +10,7 @@ from util import logger
 #############
 # Constants #
 #############
+LOG_TAG = "hangman_game"
 HANGMAN_DICT_SOLUTION = "solution"
 HANGMAN_DICT_PROGRESS = "progress"
 HANGMAN_DICT_MISTAKES_LEFT = "mistakes"
@@ -64,7 +65,11 @@ class Hangman:
                     remaining_mistakes = self.players[player][HANGMAN_DICT_MISTAKES_LEFT]
                     remaining_letters = StringHelper.get_remaining_letters(self.players[player][HANGMAN_DICT_GUESSES])
                     status_update = "{0}\n\nRemaining Mistakes: {1}\n\nRemaining Letters: {2}".format(current_progress, remaining_mistakes, remaining_letters)
-                    await ChannelInteractor.send_embedded_message(context, title="{0}'s Hangman - Status".format(user.display_name), description=StringHelper.handle_discord_formatting(status_update))
+                    await ChannelInteractor.send_embedded_message(
+                        context,
+                        title="{0}'s Hangman - Status".format(user.display_name),
+                        description=StringHelper.handle_discord_formatting(status_update)
+                    )
                     return
 
             if option == "quit":
@@ -75,7 +80,11 @@ class Hangman:
                     puzzle_solution = self.players[player][HANGMAN_DICT_SOLUTION]
                     status_update = "Sorry you chose to quit :(\nHere's your finished verse:\n{1}".format(player_mention, puzzle_solution)
                     self.players.__delitem__(player)
-                    await ChannelInteractor.send_embedded_message(context, title="{0}'s Hangman - Quitting".format(user.display_name), description=StringHelper.handle_discord_formatting(status_update))
+                    await ChannelInteractor.send_embedded_message(
+                        context,
+                        title="{0}'s Hangman - Quitting".format(user.display_name),
+                        description=StringHelper.handle_discord_formatting(status_update)
+                    )
                     return
 
             random_verse = VerseInteractor.get_random_verse()
@@ -106,7 +115,11 @@ class Hangman:
             puzzle_preview = "Here's your puzzle!\n{0}\n\nYou have {1} allowed Mistakes.".format(
                 puzzle_progress, self.players[player][HANGMAN_DICT_MISTAKES_LEFT]
             )
-            await ChannelInteractor.send_embedded_message(context, title="{0}'s Hangman - Start".format(user.display_name), description=StringHelper.handle_discord_formatting(puzzle_preview))
+            await ChannelInteractor.send_embedded_message(
+                context,
+                title="{0}'s Hangman - Start".format(user.display_name),
+                description=StringHelper.handle_discord_formatting(puzzle_preview)
+            )
 
     async def submit_guess(self, context: Context, guess: str = None):
         if guess is None:
@@ -210,12 +223,20 @@ class Hangman:
         status_update = "{0}\n\nRemaining Mistakes: {1}\n\nRemaining Letters: {2}".format(
             current_progress, remaining_mistakes, remaining_letters
         )
-        await ChannelInteractor.send_embedded_message(context, title="{0}'s Hangman - Progress".format(context.author.display_name), description=StringHelper.handle_discord_formatting(status_update))
+        await ChannelInteractor.send_embedded_message(
+            context,
+            title="{0}'s Hangman - Progress".format(context.author.display_name),
+            description=StringHelper.handle_discord_formatting(status_update)
+        )
 
     async def on_solved(self, context: Context, player: str, puzzle_solution: str):
         status_update = "You finished the verse!\n{0}".format(puzzle_solution)
         self.players.__delitem__(player)
-        await ChannelInteractor.send_embedded_message(context, title="{0}'s Hangman - Finished".format(context.author.display_name), description=StringHelper.handle_discord_formatting(status_update))
+        await ChannelInteractor.send_embedded_message(
+            context,
+            title="{0}'s Hangman - Finished".format(context.author.display_name),
+            description=StringHelper.handle_discord_formatting(status_update)
+        )
 
     ###########
     # Setters #
@@ -246,7 +267,7 @@ def create_hangman_puzzle(verse: str, prefill_level: str) -> str:
             # Remove 1 out of every 4
             removal_start_index = 3
         else:
-            logger.e("Every prefill option for hangman was passed over. Should not be possible.")
+            logger.e(LOG_TAG, "Every prefill option for hangman was passed over. Should not be possible.")
             return "error"
 
         puzzle = verse

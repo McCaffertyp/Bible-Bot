@@ -3,7 +3,7 @@
 Created on Wed Aug 24 04:35:00 2022
 
 @author: Paul McCafferty
-@version: 13.61
+@version: 14.61
 """
 import asyncio
 import operator
@@ -30,6 +30,7 @@ from quiz_game import Quiz
 from util import logger
 
 load_dotenv()
+LOG_TAG = "bible_bot"
 TOKEN = os.getenv("DISCORD_TOKEN")
 INVALID_GUILD_ERROR_CODE = 600
 RUNNING_DEBUGGER = False
@@ -40,12 +41,12 @@ if not RUNNING_DEBUGGER:
         GUILD = args[0]
         for i in range(1, len(args)):
             GUILD = "{0} {1}".format(GUILD, args[i])
-        logger.d("Attempting bot login to guild={0}".format(GUILD))
+        logger.d(LOG_TAG, "Attempting bot login to guild={0}".format(GUILD))
     except Exception as error:
         GUILD = ""
-        logger.e("Was unable to launch the bot. More information printed below.")
-        logger.e(error)
-        logger.d("Exiting with code {0}".format(INVALID_GUILD_ERROR_CODE))
+        logger.e(LOG_TAG, "Was unable to launch the bot. More information printed below.")
+        logger.e(LOG_TAG, error)
+        logger.d(LOG_TAG, "Exiting with code {0}".format(INVALID_GUILD_ERROR_CODE))
         exit(INVALID_GUILD_ERROR_CODE)
 else:
     GUILD = "Squeeze"
@@ -86,7 +87,7 @@ time_remaining = 0
 @bot.event
 async def on_ready():
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="$h | $[command]"))
-    logger.i('Successfully logged into {0} as {1}'.format(GUILD, bot.user))
+    logger.i(LOG_TAG, 'Successfully logged into {0} as {1}'.format(GUILD, bot.user))
 
 
 @bot.event
@@ -155,16 +156,16 @@ async def setup_game_channels(context: Context, game: str = None, channel_name: 
                 existing_text_channels = [str(channel.name) for channel in guild.text_channels]
 
         if quiz.game_channel_name not in existing_text_channels:
-            logger.d("Channel {0} did not exist. Creating...".format(channel_name))
+            logger.d(LOG_TAG, "Channel {0} did not exist. Creating...".format(channel_name))
             await ChannelInteractor.create_channel(context, ChannelType.TEXT, ChannelInteractor.GAME_CHANNEL_QUIZ_DEFAULT_NAME)
         if hangman.game_channel_name not in existing_text_channels:
-            logger.d("Channel {0} did not exist. Creating...".format(channel_name))
+            logger.d(LOG_TAG, "Channel {0} did not exist. Creating...".format(channel_name))
             await ChannelInteractor.create_channel(context, ChannelType.TEXT, ChannelInteractor.GAME_CHANNEL_HANGMAN_DEFAULT_NAME)
     else:
         if game != "hangman" and game != "quiz":
             await ChannelInteractor.send_message(context, "That game currently does not exist.")
         else:
-            logger.d("Setting channel for {0} to {1}".format(game, channel_name))
+            logger.d(LOG_TAG, "Setting channel for {0} to {1}".format(game, channel_name))
             update_game_channel_name(game, channel_name)
             existing_text_channels = []
             for guild in bot.guilds:
@@ -172,7 +173,7 @@ async def setup_game_channels(context: Context, game: str = None, channel_name: 
                     existing_text_channels = [str(channel.name) for channel in guild.text_channels]
 
             if channel_name not in existing_text_channels:
-                logger.d("Channel {0} did not exist. Creating...".format(channel_name))
+                logger.d(LOG_TAG, "Channel {0} did not exist. Creating...".format(channel_name))
                 await ChannelInteractor.create_channel(context, ChannelType.TEXT, channel_name)
 
             await ChannelInteractor.send_message(context, "Set {0} to be played in {1}".format(game, channel_name))
@@ -280,7 +281,7 @@ async def take_nap(context: Context, time_count: int = 1, time_unit: str = "hour
     # Technically although I only want to use those values in DISCORD_SUPPORTED_TIMES, they accept any seconds value from 1-21600
     can_use_command = await can_user_use_command(context)
     if not can_use_command:
-        logger.d("User {0} tried to use the $naptime command".format(context.author))
+        logger.d(LOG_TAG, "User {0} tried to use the $naptime command".format(context.author))
         await ChannelInteractor.send_message(context, "{0} you're not high enough on the role hierarchy to use that command.".format(context.author.mention))
         return
 
@@ -295,7 +296,7 @@ async def take_nap(context: Context, time_count: int = 1, time_unit: str = "hour
         await ChannelInteractor.send_message(context, "Time entered is unsupported by Discord.")
         return
 
-    logger.d("Setting all channels to slowmode for {0}{1}. Initiated by {2}".format(time_count, time_unit, context.author))
+    logger.d(LOG_TAG, "Setting all channels to slowmode for {0}{1}. Initiated by {2}".format(time_count, time_unit, context.author))
     await ChannelInteractor.send_message(context, "Setting all channels to slowmode for {0}{1}".format(time_count, time_unit))
     server_napping = True
 
@@ -329,9 +330,9 @@ async def get_remaining_nap_time(context: Context):
     if not server_napping:
         await ChannelInteractor.send_message(context, "Server isn't taking a nap currently.")
     else:
-        logger.d(time_remaining)
+        logger.d(LOG_TAG, time_remaining)
         str_time_remaining = TimeHelper.convert_ms_to_time(time_remaining)
-        logger.d(str_time_remaining)
+        logger.d(LOG_TAG, str_time_remaining)
         await ChannelInteractor.send_message(context, "Remaining time of nap: {0}".format(str_time_remaining))
 
 
@@ -343,13 +344,13 @@ async def get_remaining_nap_time(context: Context):
 async def end_server_nap(context: Context):
     can_use_command = await can_user_use_command(context)
     if not can_use_command:
-        logger.d("User {0} tried to use the $napend command".format(context.author))
+        logger.d(LOG_TAG, "User {0} tried to use the $napend command".format(context.author))
         await ChannelInteractor.send_message(context, "{0} you're not high enough on the role hierarchy to use that command.".format(context.author.mention))
         return
 
     global server_napping
     server_napping = False
-    logger.d("Server nap was ended by {0}".format(context.author))
+    logger.d(LOG_TAG, "Server nap was ended by {0}".format(context.author))
 
 
 ####################
@@ -387,7 +388,7 @@ def update_game_channel_name(game: str, channel_name: str):
     elif game == hangman.game_name:
         hangman.set_game_channel(channel_name)
     else:
-        logger.e("Invalid game option provided")
+        logger.e(LOG_TAG, "Invalid game option provided")
 
 
 bot.run(TOKEN)

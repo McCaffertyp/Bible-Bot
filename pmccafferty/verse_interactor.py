@@ -13,6 +13,7 @@ from util import logger
 #############
 # Constants #
 #############
+LOG_TAG = "verse_interactor"
 BOOK_NOT_FOUND_ERROR = "BOOK_NOT_FOUND_ERROR"
 CHAPTER_NOT_FOUND_ERROR = "CHAPTER_NOT_FOUND_ERROR"
 VERSE_NOT_FOUND_ERROR = "VERSE_NOT_FOUND_ERROR"
@@ -57,14 +58,18 @@ async def lookup_verses(context: Context, book_or_book_num: str = None, book_or_
 
         if StringHelper.RETURN_ERROR in verse_text:
             if book_num == -1:
-                logger.w("Verse lookup \"{0} {1}\" is not a valid reference".format(book_or_book_num, book_or_chapter_verses))
+                logger.w(LOG_TAG, "Verse lookup \"{0} {1}\" is not a valid reference".format(book_or_book_num, book_or_chapter_verses))
                 await ChannelInteractor.send_message(context, "Verse lookup \"{0} {1}\" is not a valid reference.".format(book_or_book_num, book_or_chapter_verses))
             else:
-                logger.w("Verse lookup \"{0} {1} {2}\" is not a valid reference".format(book_or_book_num, book_or_chapter_verses, chapter_verses))
+                logger.w(LOG_TAG, "Verse lookup \"{0} {1} {2}\" is not a valid reference".format(book_or_book_num, book_or_chapter_verses, chapter_verses))
                 await ChannelInteractor.send_message(context, "Verse lookup \"{0} {1} {2}\" is not a valid reference.".format(book_or_book_num, book_or_chapter_verses, chapter_verses))
             return
         else:
-            await ChannelInteractor.send_embedded_message(context, title="Verse Lookup", description=StringHelper.remove_html_tags(verse_text))
+            await ChannelInteractor.send_embedded_message(
+                context,
+                title="Verse Lookup",
+                description=StringHelper.remove_html_tags(verse_text)
+            )
 
 
 def build_full_lookup_verse_text(book: str, chapter_verses: str, book_num: int = -1) -> str:
@@ -108,12 +113,16 @@ async def search_keywords(context: Context, keywords: str = None):
         if verse_text == StringHelper.RETURN_ERROR:
             await ChannelInteractor.send_message(context, "Keywords \"{0}\" has 0 good matches.".format(keywords))
         else:
-            await ChannelInteractor.send_embedded_message(context, title="Keyword Search", description=StringHelper.remove_html_tags(verse_text))
+            await ChannelInteractor.send_embedded_message(
+                context,
+                title="Keyword Search",
+                description=StringHelper.remove_html_tags(verse_text)
+            )
 
 
 def get_votd_from_url() -> str:
     lookup_url = "{0}{1}".format(VOTD_BASE_URL, "esv")
-    logger.d("VOTD lookup_url={0}".format(lookup_url))
+    logger.d(LOG_TAG, "VOTD lookup_url={0}".format(lookup_url))
     webpage: http.client.HTTPResponse = urlopen(lookup_url)
     html_bytes: bytes = webpage.read()
     html: str = html_helper.unescape(html_bytes.decode("utf-8"))
@@ -143,13 +152,13 @@ def get_verse_from_lookup_url(book: str, chapter_verse: str, book_num: str = Non
     chapter_verse_split = chapter_verse.split(":")
     chapter = chapter_verse_split[0]
     verse = chapter_verse_split[1]
-    logger.d("Looking up: book_num={0}, book={1}, chapter={2}, verse={3}".format(book_num, book, chapter, verse))
+    logger.d(LOG_TAG, "Looking up: book_num={0}, book={1}, chapter={2}, verse={3}".format(book_num, book, chapter, verse))
     if book_num is None:
         lookup_url = "{0}{1}+{2}%3A{3}".format(VERSE_LOOKUP_BASE_URL, book.replace(" ", "+"), chapter, verse)
     else:
         lookup_url = "{0}{1}+{2}+{3}%3A{4}".format(VERSE_LOOKUP_BASE_URL, book_num, book.replace(" ", "+"), chapter, verse)
 
-    logger.d("Using url={0}".format(lookup_url))
+    logger.d(LOG_TAG, "Using url={0}".format(lookup_url))
     webpage: http.client.HTTPResponse = urlopen(lookup_url)
     html_bytes: bytes = webpage.read()
     html: str = html_helper.unescape(html_bytes.decode("utf-8"))
@@ -231,21 +240,21 @@ def get_random_verse(book: str = None) -> str:
 
         if book is None:
             book: str = book_names[random.randint(0, (len(book_names) - 1))]
-            logger.d("Random book fetched = {0}".format(book))
+            logger.d(LOG_TAG, "Random book fetched = {0}".format(book))
         else:
             if book.lower() not in bible_dict:
-                logger.e("Was unable to fetch provided book: {0}".format(book))
+                logger.e(LOG_TAG, "Was unable to fetch provided book: {0}".format(book))
                 return StringHelper.RETURN_ERROR
-            logger.d("Using user supplied book = {0}".format(book))
+            logger.d(LOG_TAG, "Using user supplied book = {0}".format(book))
         random_book_stats = bible_dict.get(book.lower())
         random_book_chapters = int(random_book_stats[BIBLE_DICT_CHAPTERS])
-        logger.d("Random book chapter count = {0}".format(random_book_chapters))
+        logger.d(LOG_TAG, "Random book chapter count = {0}".format(random_book_chapters))
         random_book_chapter = random.randint(1, random_book_chapters)
-        logger.d("Random book chapter chosen = {0}".format(random_book_chapter))
+        logger.d(LOG_TAG, "Random book chapter chosen = {0}".format(random_book_chapter))
         random_book_verses = int(random_book_stats[str(random_book_chapter)])
-        logger.d("Random book verse count for selected chapter = {1}".format(random_book_chapter, random_book_verses))
+        logger.d(LOG_TAG, "Random book verse count for selected chapter = {1}".format(random_book_chapter, random_book_verses))
         random_book_verse = random.randint(1, random_book_verses)
-        logger.d("Random book verse selected = {0}".format(random_book_verse))
+        logger.d(LOG_TAG, "Random book verse selected = {0}".format(random_book_verse))
         random_chapter_verse = "{0}:{1}".format(random_book_chapter, random_book_verse)
 
         if " " in book:
@@ -288,7 +297,7 @@ def is_valid_book_chapter_verses(book: str, chapter_verses: str, book_num: int =
             book_check = "{0} {1}".format(book_num, book_check)
 
         if book_check.lower() not in bible_dict:
-            logger.e("Was unable to fetch provided book: {0}".format(book_check))
+            logger.e(LOG_TAG, "Was unable to fetch provided book: {0}".format(book_check))
             return BOOK_NOT_FOUND_ERROR
 
         book_check_stats = bible_dict.get(book_check.lower())
@@ -297,7 +306,7 @@ def is_valid_book_chapter_verses(book: str, chapter_verses: str, book_num: int =
         book_check_chapter = chapter_verses_split[0]
         book_check_chapter_count = int(book_check_stats[BIBLE_DICT_CHAPTERS])
         if int(book_check_chapter) > book_check_chapter_count:
-            logger.e("Provided chapter is out of scope of the book provided. Book={0}, Chapter={1}".format(book_check, book_check_chapter))
+            logger.e(LOG_TAG, "Provided chapter is out of scope of the book provided. Book={0}, Chapter={1}".format(book_check, book_check_chapter))
             return CHAPTER_NOT_FOUND_ERROR
 
         book_check_verses = chapter_verses_split[1]
@@ -307,11 +316,11 @@ def is_valid_book_chapter_verses(book: str, chapter_verses: str, book_num: int =
             start_verse = int(verses_split[0])
             end_verse = int(verses_split[1])
             if start_verse > book_check_verse_count or end_verse > book_check_verse_count:
-                logger.e("Provided verse range is out of scope of the book and chapter provided. Book={0}, Chapter={1}, Verses={2}".format(book_check, book_check_chapter, book_check_verses))
+                logger.e(LOG_TAG, "Provided verse range is out of scope of the book and chapter provided. Book={0}, Chapter={1}, Verses={2}".format(book_check, book_check_chapter, book_check_verses))
                 return VERSE_NOT_FOUND_ERROR
         else:
             if int(book_check_verses) > book_check_verse_count:
-                logger.e("Provided verse range is out of scope of the book and chapter provided. Book={0}, Chapter={1}, Verses={2}".format(book_check, book_check_chapter, book_check_verses))
+                logger.e(LOG_TAG, "Provided verse range is out of scope of the book and chapter provided. Book={0}, Chapter={1}, Verses={2}".format(book_check, book_check_chapter, book_check_verses))
                 return VERSE_NOT_FOUND_ERROR
 
     return VALID_LOOKUP
@@ -322,7 +331,7 @@ def is_book_num(book_or_book_num: str) -> bool:
         int(book_or_book_num)
         return True
     except Exception as error:
-        logger.d(error)
+        logger.d(LOG_TAG, error)
         return False
 
 
