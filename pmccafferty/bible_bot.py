@@ -3,7 +3,7 @@
 Created on Wed Aug 24 04:35:00 2022
 
 @author: Paul McCafferty
-@version: 12.61
+@version: 13.61
 """
 import asyncio
 import operator
@@ -219,7 +219,7 @@ async def lookup_verses(context: Context, book_or_book_num: str = None, book_or_
 )
 async def verse_lookup_random(context: Context):
     random_verse = VerseInteractor.get_random_verse()
-    await ChannelInteractor.send_message(context, random_verse)
+    await ChannelInteractor.send_embedded_message(context, title="Random Verse", description=random_verse)
 
 
 @bot.command(

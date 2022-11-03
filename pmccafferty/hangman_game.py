@@ -1,3 +1,4 @@
+from discord.member import Member
 from discord.ext.commands import Bot
 from discord.ext.commands.context import Context
 
@@ -50,8 +51,9 @@ class Hangman:
                 await ChannelInteractor.send_message(context, "The entered option \"{0}\" is unsupported.".format(option))
                 return
 
-            player = str(context.author)
-            player_mention = context.author.mention
+            user: Member = context.author
+            player = str(user)
+            player_mention = user.mention
 
             if option == "status":
                 if player not in self.players:
@@ -61,8 +63,8 @@ class Hangman:
                     current_progress = self.players[player][HANGMAN_DICT_PROGRESS]
                     remaining_mistakes = self.players[player][HANGMAN_DICT_MISTAKES_LEFT]
                     remaining_letters = StringHelper.get_remaining_letters(self.players[player][HANGMAN_DICT_GUESSES])
-                    status_update = "{0} - Progress:\n{1}\n\nRemaining Mistakes: {2}\n\nRemaining Letters: {3}".format(player_mention, current_progress, remaining_mistakes, remaining_letters)
-                    await ChannelInteractor.send_message(context, StringHelper.handle_discord_formatting(status_update))
+                    status_update = "{0}\n\nRemaining Mistakes: {1}\n\nRemaining Letters: {2}".format(current_progress, remaining_mistakes, remaining_letters)
+                    await ChannelInteractor.send_embedded_message(context, title="{0}'s Hangman - Status".format(user.display_name), description=StringHelper.handle_discord_formatting(status_update))
                     return
 
             if option == "quit":
@@ -71,9 +73,9 @@ class Hangman:
                     return
                 else:
                     puzzle_solution = self.players[player][HANGMAN_DICT_SOLUTION]
-                    status_update = "{0} Sorry you chose to quit :(\nHere's your finished verse:\n{1}".format(player_mention, puzzle_solution)
+                    status_update = "Sorry you chose to quit :(\nHere's your finished verse:\n{1}".format(player_mention, puzzle_solution)
                     self.players.__delitem__(player)
-                    await ChannelInteractor.send_message(context, StringHelper.handle_discord_formatting(status_update))
+                    await ChannelInteractor.send_embedded_message(context, title="{0}'s Hangman - Quitting".format(user.display_name), description=StringHelper.handle_discord_formatting(status_update))
                     return
 
             random_verse = VerseInteractor.get_random_verse()
@@ -101,10 +103,10 @@ class Hangman:
             elif option == "hard":
                 self.players[player][HANGMAN_DICT_MISTAKES_LEFT] = 3
 
-            puzzle_preview = "{0} - Here's your puzzle!\n{1}\n\nYou have {2} allowed Mistakes.".format(
-                player_mention, puzzle_progress, self.players[player][HANGMAN_DICT_MISTAKES_LEFT]
+            puzzle_preview = "Here's your puzzle!\n{0}\n\nYou have {1} allowed Mistakes.".format(
+                puzzle_progress, self.players[player][HANGMAN_DICT_MISTAKES_LEFT]
             )
-            await ChannelInteractor.send_message(context, StringHelper.handle_discord_formatting(puzzle_preview))
+            await ChannelInteractor.send_embedded_message(context, title="{0}'s Hangman - Start".format(user.display_name), description=StringHelper.handle_discord_formatting(puzzle_preview))
 
     async def submit_guess(self, context: Context, guess: str = None):
         if guess is None:
@@ -145,9 +147,9 @@ class Hangman:
             self.players[player][HANGMAN_DICT_GUESSES].append(guess)
             current_progress = self.players[player][HANGMAN_DICT_PROGRESS]
             if puzzle_solution == current_progress:
-                await self.on_solved(context, player, player_mention, puzzle_solution)
+                await self.on_solved(context, player, puzzle_solution)
             else:
-                await self.on_progress(context, player, player_mention, current_progress)
+                await self.on_progress(context, player, current_progress)
 
     def update_hangman_puzzle_progress_letter_guess(self, guess: str, player: str) -> str:
         solution_characters = [c for c in self.players[player][HANGMAN_DICT_SOLUTION]]
@@ -202,18 +204,18 @@ class Hangman:
             return
         self.players[player][HANGMAN_DICT_MISTAKES_LEFT] = updated_mistakes_remaining
 
-    async def on_progress(self, context: Context, player: str, player_mention: str, current_progress: str):
+    async def on_progress(self, context: Context, player: str, current_progress: str):
         remaining_mistakes = self.players[player][HANGMAN_DICT_MISTAKES_LEFT]
         remaining_letters = StringHelper.get_remaining_letters(self.players[player][HANGMAN_DICT_GUESSES])
-        status_update = "{0} - Progress:\n{1}\n\nRemaining Mistakes: {2}\n\nRemaining Letters: {3}".format(
-            player_mention, current_progress, remaining_mistakes, remaining_letters
+        status_update = "{0}\n\nRemaining Mistakes: {1}\n\nRemaining Letters: {2}".format(
+            current_progress, remaining_mistakes, remaining_letters
         )
-        await ChannelInteractor.send_message(context, StringHelper.handle_discord_formatting(status_update))
+        await ChannelInteractor.send_embedded_message(context, title="{0}'s Hangman - Progress".format(context.author.display_name), description=StringHelper.handle_discord_formatting(status_update))
 
-    async def on_solved(self, context: Context, player: str, player_mention: str, puzzle_solution: str):
-        status_update = "Congrats, {0}! You finished the verse!\n{1}".format(player_mention, puzzle_solution)
+    async def on_solved(self, context: Context, player: str, puzzle_solution: str):
+        status_update = "You finished the verse!\n{0}".format(puzzle_solution)
         self.players.__delitem__(player)
-        await ChannelInteractor.send_message(context, StringHelper.handle_discord_formatting(status_update))
+        await ChannelInteractor.send_embedded_message(context, title="{0}'s Hangman - Finished".format(context.author.display_name), description=StringHelper.handle_discord_formatting(status_update))
 
     ###########
     # Setters #

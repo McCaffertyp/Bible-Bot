@@ -64,7 +64,7 @@ async def lookup_verses(context: Context, book_or_book_num: str = None, book_or_
                 await ChannelInteractor.send_message(context, "Verse lookup \"{0} {1} {2}\" is not a valid reference.".format(book_or_book_num, book_or_chapter_verses, chapter_verses))
             return
         else:
-            await ChannelInteractor.send_message(context, StringHelper.remove_html_tags(verse_text))
+            await ChannelInteractor.send_embedded_message(context, title="Verse Lookup", description=StringHelper.remove_html_tags(verse_text))
 
 
 def build_full_lookup_verse_text(book: str, chapter_verses: str, book_num: int = -1) -> str:
@@ -108,7 +108,7 @@ async def search_keywords(context: Context, keywords: str = None):
         if verse_text == StringHelper.RETURN_ERROR:
             await ChannelInteractor.send_message(context, "Keywords \"{0}\" has 0 good matches.".format(keywords))
         else:
-            await ChannelInteractor.send_message(context, StringHelper.remove_html_tags(verse_text))
+            await ChannelInteractor.send_embedded_message(context, title="Keyword Search", description=StringHelper.remove_html_tags(verse_text))
 
 
 def get_votd_from_url() -> str:

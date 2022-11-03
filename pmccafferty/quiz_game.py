@@ -1,5 +1,6 @@
 import random
 
+from discord.member import Member
 from discord.ext.commands import Bot
 from discord.ext.commands.context import Context
 
@@ -39,7 +40,8 @@ class Quiz:
         if not correct_channel:
             return
 
-        player = str(context.author)
+        user: Member = context.author
+        player = str(user)
         username = StringHelper.make_valid_firebase_name(player.split("#")[0])
         if option is None:
             await ChannelInteractor.send_message(context, "{0} provided no option. Choosing a random one.".format(username))
@@ -70,11 +72,11 @@ class Quiz:
             await self.option_stat(context, option, username)
             return
         else:
-            await ChannelInteractor.send_message(context, "{0}, that option is unsupported.".format(context.author.mention))
+            await ChannelInteractor.send_message(context, "{0}, that option is unsupported.".format(user.mention))
             return
 
         self.check_and_create_player_data(username)
-        await ChannelInteractor.send_message(context, "{0}, your quiz is:\n{1}".format(context.author.mention, quiz_verse))
+        await ChannelInteractor.send_embedded_message(context, title="{0}'s Quiz".format(user.display_name), description="{0}".format(quiz_verse))
 
     def option_ref(self, player: str, random_verse: str, verse_reference: str) -> str:
         self.players[player] = verse_reference

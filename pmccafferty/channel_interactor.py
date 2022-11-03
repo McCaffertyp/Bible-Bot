@@ -1,6 +1,6 @@
 from enum import Enum
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 
 import discord
 from discord.ext.commands import Bot
@@ -93,6 +93,52 @@ async def is_correct_channel(context: Context, game, channel_name: str) -> bool:
 
 async def send_message(message, msg):
     await message.channel.send(msg, allowed_mentions=discord.AllowedMentions().all())
+
+
+async def send_embedded_message(
+        message,
+        title: str,
+        description: str,
+        color: int = 0xC9AA1E,
+        url: str = None,
+        author_name: str = None,
+        author_url: str = None,
+        author_icon_url: str = None,
+        thumbnail: str = None,
+        fields: List[dict] = None,
+        footer_text: str = None,
+        footer_icon_url: str = None
+):
+    if url is None:
+        embed = discord.Embed(title=title, description=description, color=color)
+    else:
+        embed = discord.Embed(title=title, description=description, color=color, url=url)
+
+    if author_name is not None:
+        if author_url is not None:
+            if author_icon_url is not None:
+                embed.set_author(name=author_name, url=author_url, icon_url=author_icon_url)
+            else:
+                embed.set_author(name=author_name, url=author_url)
+        elif author_icon_url is not None:
+            embed.set_author(name=author_name, icon_url=author_icon_url)
+        else:
+            embed.set_author(name=author_name)
+
+    if thumbnail is not None:
+        embed.set_thumbnail(url=thumbnail)
+
+    if fields is not None:
+        for field in fields:
+            embed.add_field(name=field["name"], value=field["value"], inline=field["inline"])
+
+    if footer_text is not None:
+        if footer_icon_url is not None:
+            embed.set_footer(text=footer_text, icon_url=footer_icon_url)
+        else:
+            embed.set_footer(text=footer_text)
+
+    await message.channel.send(embed=embed, allowed_mentions=discord.AllowedMentions().all())
 
 
 ##############
