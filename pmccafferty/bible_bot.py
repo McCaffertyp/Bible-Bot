@@ -3,7 +3,7 @@
 Created on Wed Aug 24 04:35:00 2022
 
 @author: Paul McCafferty
-@version: 14.61
+@version: 14.62
 """
 import asyncio
 import operator
@@ -238,7 +238,11 @@ async def search_keywords(context: Context, *, keyword: str = None):
     brief="Quizzes the user on a random verse."
 )
 async def bible_quizzing(context: Context, option: str = None, *, book: str = None):
-    await quiz.start_game(context, option, book)
+    mentioned_user = context.message.mentions[0]
+    if mentioned_user:
+        await quiz.start_game(context, option, mentioned_user, True)
+    else:
+        await quiz.start_game(context, option, book)
 
 
 @bot.command(

@@ -1,8 +1,11 @@
+import csv
+
+from typing import List
+
 #############
 # Constants #
 #############
-from typing import List
-
+BIBLE_DICT_NAME = "Name"
 RETURN_ERROR = "RETURN_ERROR"
 NUMBERS_STRING = "0123456789"
 ENGLISH_ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -60,6 +63,9 @@ def is_banned_word(swear_word: str, check_word: str) -> bool:
 
 
 def remove_repeated_letters(word: str) -> str:
+    if len(word) <= 1:
+        return word
+
     s: str = word[0]
     c: str = word[0]
     for cc in word[1:]:
@@ -169,3 +175,20 @@ def contains_characters(check_string: str, check_list: List[str]) -> bool:
         if c in check_string:
             return True
     return False
+
+
+def is_book_of_the_bible(s: str) -> bool:
+    with open("data/bible_data_esv.csv") as csv_file:
+        csv_reader = csv.DictReader(csv_file)
+        bible_dict = {}
+        book_names = []
+        skip_first_row = True
+        for row in csv_reader:
+            if not skip_first_row:
+                skip_first_row = True
+            else:
+                book_name = row[BIBLE_DICT_NAME].lower()
+                bible_dict[book_name] = row
+                book_names.append(book_name)
+
+        return s.lower() in book_names

@@ -33,7 +33,7 @@ class Quiz:
         self.game_channel_name = ChannelInteractor.GAME_CHANNEL_QUIZ_DEFAULT_NAME
         self.players = {}
 
-    async def start_game(self, context: Context, option: str = None, book: str = None):
+    async def start_game(self, context: Context, option: str = None, book_or_user=None, is_user: bool = False):
         channel_exists = await ChannelInteractor.check_channel_exists(self.bot, self.guild_name, context, self.game_name, self.game_channel_name)
         if not channel_exists:
             return
@@ -51,27 +51,34 @@ class Quiz:
             option = options[random.randint(0, 2)]
             await ChannelInteractor.send_message(context, "{0} your quizzing option is on: {1}".format(username, option))
 
-        random_verse = VerseInteractor.get_random_verse(book)
-        if random_verse == StringHelper.RETURN_ERROR:
-            await ChannelInteractor.send_message(context, "{0} that book does not exist.".format(username))
-            return
-        verse_text_start = random_verse.find("\"") + 1
-        verse_text_end = random_verse.find("\"", verse_text_start)
-        verse_text = random_verse[verse_text_start:verse_text_end]
+        if option == "ref" or option == "word" or option == "sentence":
+            if not is_user:
+                await ChannelInteractor.send_message(context, "{0} that is not a valid book of the Bible.".format(username))
+                return
 
-        verse_reference_start_search = "\" - "
-        verse_reference_start = random_verse.find(verse_reference_start_search) + len(verse_reference_start_search)
-        verse_reference_end = random_verse.find(" ESV")
-        verse_reference = random_verse[verse_reference_start:verse_reference_end]
+            random_verse = VerseInteractor.get_random_verse(book_or_user)
+            if random_verse == StringHelper.RETURN_ERROR:
+                await ChannelInteractor.send_message(context, "{0} that book does not exist.".format(username))
+                return
 
-        if option == "ref":
-            quiz_verse = self.option_ref(player, random_verse, verse_reference)
-        elif option == "word":
-            quiz_verse = self.option_word(player, random_verse, verse_text)
-        elif option == "sentence":
-            quiz_verse = self.option_sentence(player, random_verse, verse_text)
+            verse_text_start = random_verse.find("\"") + 1
+            verse_text_end = random_verse.find("\"", verse_text_start)
+            verse_text = random_verse[verse_text_start:verse_text_end]
+
+            verse_reference_start_search = "\" - "
+            verse_reference_start = random_verse.find(verse_reference_start_search) + len(verse_reference_start_search)
+            verse_reference_end = random_verse.find(" ESV")
+            verse_reference = random_verse[verse_reference_start:verse_reference_end]
+
+            if option == "ref":
+                quiz_verse = self.option_ref(player, random_verse, verse_reference)
+            elif option == "word":
+                quiz_verse = self.option_word(player, random_verse, verse_text)
+            else:
+                quiz_verse = self.option_sentence(player, random_verse, verse_text)
+
         elif option == "rating" or option == "peak" or option == "streak" or option == "games" or option == "stats":
-            await self.option_stat(context, option, username)
+            await self.option_stat(context, option, book_or_user)
             return
         else:
             await ChannelInteractor.send_message(context, "{0}, that option is unsupported.".format(user.mention))
@@ -116,22 +123,29 @@ class Quiz:
         # quizzing[player] = all_words[1:(len(all_words) - 1)]
         return StringHelper.replace_characters(random_verse, remove_sentence, "_")
 
-    async def option_stat(self, context: Context, option: str, username: str):
-        member: Member = context.author
-        user_database_path = "{0}/{1}".format(self.game_name, username)
+    async def option_stat(self, context: Context, option: str, mention):
+        if mention is None:
+            member: Member = context.author
+        else:
+            member: Member = mention
+        user_check = StringHelper.make_valid_firebase_name(str(member).split("#")[0])
+        user_database_path = "{0}/{1}".format(self.game_name, user_check)
         rating_path = "{0}/{1}".format(user_database_path, FIREBASE_RATING_REF)
         peak_rating_path = "{0}/{1}".format(user_database_path, FIREBASE_PEAK_RATING_REF)
         best_streak_path = "{0}/{1}".format(user_database_path, FIREBASE_BEST_STREAK_REF)
         current_streak_path = "{0}/{1}".format(user_database_path, FIREBASE_CURRENT_STREAK_REF)
         games_played_path = "{0}/{1}".format(user_database_path, FIREBASE_GAMES_PLAYED_REF)
         if not self.firebase_interactor.check_node_exists(user_database_path):
-            await ChannelInteractor.send_message(context, "{0} you aren't currently in the system.\nSetting up your profile...".format(member.mention))
-            self.firebase_interactor.write_to_node(rating_path, DEFAULT_POINTS)
-            self.firebase_interactor.write_to_node(peak_rating_path, DEFAULT_POINTS)
-            self.firebase_interactor.write_to_node(best_streak_path, 0)
-            self.firebase_interactor.write_to_node(current_streak_path, 0)
-            self.firebase_interactor.write_to_node(games_played_path, 0)
-            await ChannelInteractor.send_message(context, "{0} you are now in the database. Have fun playing!")
+            if mention is None:
+                await ChannelInteractor.send_message(context, "{0} you aren't currently in the system.\nSetting up your profile...".format(member.mention))
+                self.firebase_interactor.write_to_node(rating_path, DEFAULT_POINTS)
+                self.firebase_interactor.write_to_node(peak_rating_path, DEFAULT_POINTS)
+                self.firebase_interactor.write_to_node(best_streak_path, 0)
+                self.firebase_interactor.write_to_node(current_streak_path, 0)
+                self.firebase_interactor.write_to_node(games_played_path, 0)
+                await ChannelInteractor.send_message(context, "{0} you are now in the database. Have fun playing!".format(member.mention))
+            else:
+                await ChannelInteractor.send_message(context, "The person you have tried to quiz check has not played yet.")
         else:
             if option == "rating":
                 current_rating = self.firebase_interactor.read_from_node(rating_path)
