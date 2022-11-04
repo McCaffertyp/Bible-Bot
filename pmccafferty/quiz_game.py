@@ -52,7 +52,7 @@ class Quiz:
             await ChannelInteractor.send_message(context, "{0} your quizzing option is on: {1}".format(username, option))
 
         if option == "ref" or option == "word" or option == "sentence":
-            if not is_user:
+            if is_user:
                 await ChannelInteractor.send_message(context, "{0} that is not a valid book of the Bible.".format(username))
                 return
 
