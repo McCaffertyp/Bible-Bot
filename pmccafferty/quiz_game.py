@@ -77,8 +77,8 @@ class Quiz:
             else:
                 quiz_verse = self.option_sentence(player, random_verse, verse_text)
 
-        elif option == "rating" or option == "peak" or option == "streak" or option == "games" or option == "stats":
-            await self.option_stat(context, option, book_or_user)
+        elif option == "stats":
+            await self.option_stat(context, book_or_user)
             return
         else:
             await ChannelInteractor.send_message(context, "{0}, that option is unsupported.".format(user.mention))
@@ -123,7 +123,7 @@ class Quiz:
         # quizzing[player] = all_words[1:(len(all_words) - 1)]
         return StringHelper.replace_characters(random_verse, remove_sentence, "_")
 
-    async def option_stat(self, context: Context, option: str, mention):
+    async def option_stat(self, context: Context, mention):
         if mention is None:
             member: Member = context.author
         else:
@@ -147,28 +147,15 @@ class Quiz:
             else:
                 await ChannelInteractor.send_message(context, "The person you have tried to quiz check has not played yet.")
         else:
-            if option == "rating":
-                current_rating = self.firebase_interactor.read_from_node(rating_path)
-                await ChannelInteractor.send_message(context, "{0} Current Rating: {1}".format(member.mention, current_rating))
-            elif option == "peak":
-                peak_rating = self.firebase_interactor.read_from_node(peak_rating_path)
-                await ChannelInteractor.send_message(context, "{0} Peak Rating: {1}".format(member.mention, peak_rating))
-            elif option == "streak":
-                best_streak = self.firebase_interactor.read_from_node(best_streak_path)
-                await ChannelInteractor.send_message(context, "{0} Best Streak: {1}".format(member.mention, best_streak))
-            elif option == "games":
-                games_played = self.firebase_interactor.read_from_node(games_played_path)
-                await ChannelInteractor.send_message(context, "{0} Games Played: {1}".format(member.mention, games_played))
-            else:
-                current_rating = self.firebase_interactor.read_from_node(rating_path)
-                peak_rating = self.firebase_interactor.read_from_node(peak_rating_path)
-                best_streak = self.firebase_interactor.read_from_node(best_streak_path)
-                games_played = self.firebase_interactor.read_from_node(games_played_path)
-                await ChannelInteractor.send_embedded_message(
-                    context,
-                    title="{0}'s Quiz Stats".format(member.display_name),
-                    description="Current Rating: {0}\nPeak Rating: {1}\nBest Streak: {2}\nGames Played: {3}".format(current_rating, peak_rating, best_streak, games_played)
-                )
+            current_rating = self.firebase_interactor.read_from_node(rating_path)
+            peak_rating = self.firebase_interactor.read_from_node(peak_rating_path)
+            best_streak = self.firebase_interactor.read_from_node(best_streak_path)
+            games_played = self.firebase_interactor.read_from_node(games_played_path)
+            await ChannelInteractor.send_embedded_message(
+                context,
+                title="{0}'s Quiz Stats".format(member.display_name),
+                description="Current Rating: {0}\nPeak Rating: {1}\nBest Streak: {2}\nGames Played: {3}".format(current_rating, peak_rating, best_streak, games_played)
+            )
 
     async def check_answer(self, message, answer: str):
         if "$quiz" in message.content:

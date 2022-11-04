@@ -3,7 +3,7 @@
 Created on Wed Aug 24 04:35:00 2022
 
 @author: Paul McCafferty
-@version: 14.64
+@version: 14.65
 """
 import asyncio
 import operator
@@ -122,12 +122,11 @@ async def print_help(context: Context):
     lookup_help_text = "$lookup [book #/book] [book/chapter:verse] (chapter:verse)\nLooks up and prints out the verse that was searched."
     rlookup_help_text = "$rlookup\nLooks up and prints out a random verse."
     keywords_help_text = "$keywords [word]\nTakes in any amount of words and searches online for the top related verse to print out as a response."
-    quiz_help_text = "$quiz [ref/word/sentence/rating/streak/games] (book)\nSends a random verse with either the reference, a single word, or a sentence missing for the user to solve."
+    quiz_help_text = "$quiz [ref/word/sentence/stats] (book)\nSends a random verse with either the reference, a single word, or a sentence missing for the user to solve. User can select book. User can also look at stats."
     hangman_help_text = "$hangman [easy/medium/hard/status/quit] (none/low/medium/high)\nUsing hangman starts a game. Three modes, status and quit are the accepted arguments. Change prefill with secondary option."
     hguess_help_text = "$hguess [guess]\nUsed to submit a guess to an ongoing hangman puzzle for the message sender."
     math_help_text = "$math [number_a] [operator] [number_b]\nProvided two numbers and a method of operation, the bot will produce the result. Supported operators: +, -, *, /, ^"
-    naptime_help_text = "$naptime (number) (seconds/minutes/hours)\nPuts all channels in slowmode for a specified period of time. Only the options which Discord allow are acceptable." \
-                        "\nSupported times: 5s, 10s, 15s, 30s, 1m, 2m, 5m, 10m, 15m, 30m, 1h, 2h, 6h"
+    naptime_help_text = "$naptime (number) (seconds/minutes/hours)\nPuts all channels in slowmode for a specified period of time. Only the options which Discord allow are acceptable.\nSupported times: 5s, 10s, 15s, 30s, 1m, 2m, 5m, 10m, 15m, 30m, 1h, 2h, 6h"
     napcheck_help_text = "$napcheck\nPrints out the time remaining for the nap."
     napend_help_text = "$napend\nEnds the current server nap."
     help_text = "```{0}\n\n{1}\n\n{2}\n\n{3}\n\n{4}\n\n{5}\n\n{6}\n\n{7}\n\n{8}\n\n{9}\n\n{10}\n\n{11}\n\n{12}\n\n{13}\n\n{14}```".format(
@@ -234,7 +233,7 @@ async def search_keywords(context: Context, *, keyword: str = None):
 
 @bot.command(
     name="quiz",
-    help="Sends a random verse with either the reference, a single word, or a sentence missing for the user to solve. User can select book.",
+    help="Sends a random verse with either the reference, a single word, or a sentence missing for the user to solve. User can select book. User can also check quiz stats.",
     brief="Quizzes the user on a random verse."
 )
 async def bible_quizzing(context: Context, option: str = None, *, book: str = None):
