@@ -41,7 +41,7 @@ if not RUNNING_DEBUGGER:
         GUILD = args[0]
         for i in range(1, len(args)):
             GUILD = "{0} {1}".format(GUILD, args[i])
-        logger.d(LOG_TAG, "Attempting bot login to guild={0}".format(GUILD))
+        logger.d(LOG_TAG, "Attempting bot login to guild=\"{0}\"".format(GUILD))
     except Exception as error:
         GUILD = ""
         logger.e(LOG_TAG, "Was unable to launch the bot. More information printed below.")
