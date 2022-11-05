@@ -87,7 +87,7 @@ time_remaining = 0
 @bot.event
 async def on_ready():
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="$h | $[command]"))
-    logger.i(LOG_TAG, 'Successfully logged into {0} as {1}'.format(GUILD, bot.user))
+    logger.i(LOG_TAG, 'Successfully logged into \"{0}\" as {1}'.format(GUILD, bot.user))
 
 
 @bot.event
