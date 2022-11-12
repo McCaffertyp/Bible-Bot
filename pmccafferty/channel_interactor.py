@@ -75,6 +75,13 @@ async def delete_message(message, word):
 
 
 async def filter_message(message, swear_words: List[str]):
+    special_swear_word = "sugar honey ice tea"
+    special_swear_word_vary = "sugar honey iced tea"
+    if special_swear_word in message.content.lower():
+        await delete_message(message, special_swear_word)
+    elif special_swear_word_vary in message.content.lower():
+        await delete_message(message, special_swear_word_vary)
+
     message_words_whole: List[str] = message.content.lower().split(" ")
     message_words_base: List[str] = [StringHelper.remove_repeated_letters(word) for word in message.content.lower().split(" ")]
     for s_word in swear_words:
