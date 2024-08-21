@@ -3,7 +3,7 @@
 Created on Wed Aug 24 04:35:00 2022
 
 @author: Paul McCafferty
-@version: 14.65
+@version: 14.66
 """
 import asyncio
 import operator
@@ -11,13 +11,13 @@ import os
 import sys
 from typing import List
 
-import pyrebase
 import discord
 from discord.channel import TextChannel
 from discord.ext import commands
 from discord.ext.commands.context import Context
 from discord.role import Role
 from dotenv import load_dotenv
+from pyrebase import pyrebase
 
 import channel_interactor as ChannelInteractor
 import util.string as StringHelper
