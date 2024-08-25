@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Aug 24 04:35:00 2022
+Created on Wed Aug 24 04:35:00 PT 2022
 
 @author: Paul McCafferty
-@version: 14.66
+@version: 14.67
 """
 import asyncio
 import operator
@@ -12,12 +12,12 @@ import sys
 from typing import List
 
 import discord
+import pyrebase
 from discord.channel import TextChannel
 from discord.ext import commands
 from discord.ext.commands.context import Context
 from discord.role import Role
 from dotenv import load_dotenv
-from pyrebase import pyrebase
 
 import channel_interactor as ChannelInteractor
 import util.string as StringHelper
