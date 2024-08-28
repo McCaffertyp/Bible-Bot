@@ -3,7 +3,7 @@
 Created on Wed Aug 24 04:35:00 PT 2022
 
 @author: Paul McCafferty
-@version: 14.67
+@version: 14.68
 """
 import asyncio
 import operator
@@ -62,7 +62,8 @@ DISCORD_SUPPORTED_TIMES = ["5s", "10s", "15s", "30s", "1m", "2m", "5m", "10m", "
 # init #
 ########
 intents = discord.Intents().all()
-bot = commands.Bot(command_prefix=commands.when_mentioned_or("$"), intents=intents)
+# bot = commands.Bot(command_prefix=commands.when_mentioned_or("$"), intents=intents)
+bot = commands.Bot(command_prefix="$", intents=intents)
 firebase = pyrebase.initialize_app(FIREBASE_CONFIG)
 database = firebase.database()
 guild_string_ref = StringHelper.quick_hash(GUILD, 5, 15)
@@ -140,7 +141,7 @@ async def print_help(context: Context):
 
 @bot.command(
     name="setup",
-    help="Use this command with the game you want to setup and which channel to link it to. Is provided with default values of \"bible-quizzing\" and \"bible-hangman\".",
+    help="Use this command with the game you want to setup and which channel to link it to. Is provided with default values of \"bible-quiz-game\" and \"bible-hangman-game\".",
     brief="Set specific channels for the games."
 )
 async def setup_game_channels(context: Context, game: str = None, channel_name: str = None):
@@ -308,7 +309,7 @@ async def take_nap(context: Context, time_count: int = 1, time_unit: str = "hour
         if guild.name == GUILD:
             for text_channel in guild.text_channels:
                 channel: TextChannel = text_channel
-                await channel.edit(slowmode_delay=(discord_time_ms / 1000))
+                await channel.edit(slowmode_delay=int(discord_time_ms / 1000))
 
     time_remaining = discord_time_ms
     while time_remaining > 0 and server_napping:
